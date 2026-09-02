@@ -137,6 +137,7 @@ function homePage() {
         <div class="hero-actions">
           <button class="button button-primary" type="button" data-action="voice-help">${t("home.voice")}</button>
           ${store.data.profile.role !== "caregiver" ? '<button class="button button-secondary" type="button" data-action="check-in">I\'m okay</button>' : ''}
+          ${store.data.profile.role === "patient" ? '<button class="button button-secondary" type="button" data-action="test-alarm" title="Test your reminder sound">🔔 Test Alarm</button>' : ''}
           <button class="button button-danger" type="button" data-action="open-emergency">${t("home.emergency")}</button>
         </div>
       </article>
@@ -432,6 +433,15 @@ async function handleGlobalClick(event) {
     });
     offerCaregiverHandoff(result, { urgent: true });
   }
+  if (target.closest('[data-action="test-alarm"]')) {
+    try {
+      await alarms.unlock();
+      await alarms.ring({ id: `test-${Date.now()}`, title: "🔔 Test: Medicine Reminder", body: "This is how your medication reminders will sound and look!" });
+    } catch (error) {
+      toast("Could not play alarm: " + error.message, { type: "error" });
+    }
+    return;
+  }
   if (target.closest('[data-action="check-in"]')) {
     const result = await deliverCaregiverAlert("okay");
     store.update((data) => {
@@ -579,17 +589,25 @@ async function setupPatientNotifications() {
   if (store.data.profile.role !== "patient") return;
   if (!store.data.profile.name) return; // Not set up yet — wait until they sign in.
 
-  // Start the alarm service if it isn't already running.
+  // Always enable the alarm setting and start the ticker — regardless of AudioContext.
+  // Sound will work after the first user interaction (browser requirement).
   if (!store.data.settings.alarmsEnabled) {
-    try {
-      await alarms.unlock();
-      store.update((data) => { data.settings.alarmsEnabled = true; });
-      alarms.start();
-    } catch {
-      // AudioContext could not start (browser restriction). Alarms will start
-      // on the first user interaction instead.
-    }
+    store.update((data) => { data.settings.alarmsEnabled = true; });
   }
+  if (!alarms.timer) {
+    alarms.start();
+  }
+
+  // Silently attempt to unlock audio now so the first alarm rings without
+  // needing a second tap. This fails safely if no interaction has happened yet.
+  alarms.unlock().catch(() => {
+    // AudioContext requires a user gesture — will be unlocked on first click.
+    const unlockOnce = () => {
+      alarms.unlock().catch(() => {});
+      document.removeEventListener("click", unlockOnce, true);
+    };
+    document.addEventListener("click", unlockOnce, { once: true, capture: true });
+  });
 
   // Request browser notification permission if we haven't asked yet.
   if ("Notification" in window && Notification.permission === "default") {
@@ -603,3 +621,7 @@ async function setupPatientNotifications() {
 }
 
 init();
+
+// Expose for console debugging
+globalThis._memoAlarms = alarms;
+globalThis._memoStore = store;

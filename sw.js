@@ -1,4 +1,4 @@
-const CACHE_VERSION = "memocare-shell-v7";
+const CACHE_VERSION = "memocare-shell-v9";
 const APP_SHELL = [
   "./",
   "./index.html",
