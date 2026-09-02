@@ -563,6 +563,43 @@ async function init() {
     toast(store.recovery.join(" "), { type: "info", duration: 9000 });
   }
   registerServiceWorker();
+
+  // Auto-setup notifications for the patient after a short delay so the
+  // first page render has already painted before we show any permission prompt.
+  setTimeout(() => setupPatientNotifications(), 2000);
+}
+
+/**
+ * For the patient role: quietly requests notification permission if not yet
+ * granted and auto-starts the alarm ticker so they always receive reminders
+ * for medicines, routines, and appointments — without needing to visit Settings.
+ */
+async function setupPatientNotifications() {
+  // Only auto-prompt for patients. Caregivers manage this manually via Settings.
+  if (store.data.profile.role !== "patient") return;
+  if (!store.data.profile.name) return; // Not set up yet — wait until they sign in.
+
+  // Start the alarm service if it isn't already running.
+  if (!store.data.settings.alarmsEnabled) {
+    try {
+      await alarms.unlock();
+      store.update((data) => { data.settings.alarmsEnabled = true; });
+      alarms.start();
+    } catch {
+      // AudioContext could not start (browser restriction). Alarms will start
+      // on the first user interaction instead.
+    }
+  }
+
+  // Request browser notification permission if we haven't asked yet.
+  if ("Notification" in window && Notification.permission === "default") {
+    const result = await requestNotificationPermission();
+    if (result.state === "granted") {
+      toast("✅ Notifications enabled! You will be reminded about medicines, routines, and appointments.", { duration: 6000 });
+    } else if (result.state === "denied") {
+      toast("⚠️ Notification permission denied. Enable notifications in your browser settings to receive reminders.", { type: "warning", duration: 8000 });
+    }
+  }
 }
 
 init();
