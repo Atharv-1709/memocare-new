@@ -1,0 +1,282 @@
+:root {
+    --mc-blue: #3B82F6;
+    --mc-blue-deep: #1E40AF;
+    --mc-purple: #A78BFA;
+    --mc-green: #10B981;
+    --mc-amber: #F59E0B;
+    --mc-red: #EF4444;
+    --mc-ink: #172033;
+    --mc-muted: #64748B;
+    --mc-line: rgba(148, 163, 184, 0.28);
+    --mc-surface: rgba(255, 255, 255, 0.86);
+    --mc-surface-strong: rgba(255, 255, 255, 0.96);
+    --mc-shadow: 0 18px 48px rgba(30, 64, 175, 0.14);
+    --mc-shadow-soft: 0 10px 28px rgba(15, 23, 42, 0.10);
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: Inter, "Segoe UI", Roboto, -apple-system, BlinkMacSystemFont, sans-serif !important;
+    color: var(--mc-ink);
+    background:
+        radial-gradient(circle at 12% 8%, rgba(90, 157, 242, 0.22), transparent 34rem),
+        radial-gradient(circle at 88% 12%, rgba(167, 139, 250, 0.16), transparent 30rem),
+        linear-gradient(135deg, #F0F9FF 0%, #FFF5E6 100%) !important;
+}
+
+.header {
+    padding: 1rem clamp(1rem, 3vw, 2rem) !important;
+    background: rgba(255, 255, 255, 0.78) !important;
+    border-bottom: 1px solid rgba(59, 130, 246, 0.22) !important;
+    box-shadow: 0 10px 34px rgba(30, 64, 175, 0.10) !important;
+}
+
+.logo {
+    font-size: clamp(1.55rem, 4vw, 2.2rem) !important;
+    line-height: 1.1;
+    margin-bottom: 0.2rem !important;
+}
+
+.header-subtitle,
+.header > div:not(.logo),
+.header > p {
+    color: var(--mc-muted) !important;
+    font-size: clamp(1rem, 2.4vw, 1.12rem) !important;
+    font-weight: 650 !important;
+}
+
+.content {
+    padding: clamp(1rem, 2vw, 1.4rem) clamp(0.75rem, 2vw, 1.5rem) 7rem !important;
+}
+
+.container,
+.game-container {
+    width: min(100%, 980px) !important;
+    max-width: 980px !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+}
+
+.games-grid {
+    gap: clamp(1rem, 2vw, 1.35rem) !important;
+}
+
+.game-card,
+.player-card,
+.caller-area,
+.drop-zone,
+.pieces-area,
+.stats {
+    background: var(--mc-surface) !important;
+    border: 1px solid var(--mc-line) !important;
+    box-shadow: var(--mc-shadow-soft) !important;
+    backdrop-filter: blur(18px);
+}
+
+.game-card {
+    border-radius: 18px !important;
+    min-height: 11rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.game-card::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 4px;
+    background: linear-gradient(90deg, var(--mc-blue), var(--mc-purple), var(--mc-green));
+}
+
+.game-card:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: var(--mc-shadow) !important;
+}
+
+.game-card h3,
+.player-card h3,
+.drop-zone h3,
+.pieces-area h3 {
+    color: var(--mc-ink) !important;
+    font-weight: 800 !important;
+    letter-spacing: 0;
+}
+
+.game-card p,
+.numbers-called {
+    color: var(--mc-muted) !important;
+}
+
+.stats {
+    border-radius: 16px !important;
+    padding: 0.85rem 1.15rem !important;
+    font-weight: 750;
+    color: var(--mc-ink);
+}
+
+.btn-primary,
+.call-btn,
+.reset-btn,
+.try-again-btn {
+    border-radius: 14px !important;
+    font-weight: 800 !important;
+    min-height: 48px;
+    box-shadow: 0 12px 24px rgba(59, 130, 246, 0.22);
+}
+
+.btn-primary:hover,
+.call-btn:hover,
+.reset-btn:hover,
+.try-again-btn:hover {
+    transform: translateY(-2px);
+}
+
+.wordsearch-grid,
+.memory-board,
+.grid-container,
+.pieces-grid,
+.bingo-board {
+    touch-action: manipulation;
+}
+
+.wordsearch-grid {
+    width: min(100%, 620px);
+    margin: 1rem auto !important;
+    padding: clamp(0.5rem, 2vw, 0.9rem) !important;
+    gap: clamp(3px, 0.8vw, 6px) !important;
+    border-radius: 18px !important;
+    background: rgba(226, 232, 240, 0.74) !important;
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.32), var(--mc-shadow-soft);
+}
+
+.wordsearch-cell,
+.card,
+.bingo-cell,
+.puzzle-piece,
+.grid-slot {
+    border-radius: 12px !important;
+}
+
+.wordsearch-cell,
+.bingo-cell,
+.card {
+    box-shadow: 0 8px 18px rgba(30, 64, 175, 0.12);
+}
+
+.wordsearch-cell {
+    color: var(--mc-ink);
+    font-size: clamp(0.8rem, 2.6vw, 1.08rem) !important;
+}
+
+.word-list {
+    max-width: 760px;
+    margin-inline: auto;
+}
+
+.word-item,
+.badge {
+    border-radius: 999px !important;
+    border: 1px solid rgba(59, 130, 246, 0.16);
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+}
+
+.memory-board {
+    max-width: 620px;
+    margin-inline: auto !important;
+}
+
+.card {
+    min-height: 72px;
+    font-weight: 900;
+}
+
+.players-grid,
+.puzzle-wrapper {
+    align-items: stretch !important;
+}
+
+.caller-area {
+    border-radius: 18px !important;
+}
+
+.last-number {
+    font-size: clamp(2.4rem, 9vw, 4.6rem) !important;
+    line-height: 1;
+}
+
+.bottom-nav {
+    padding: 0.55rem max(0.55rem, env(safe-area-inset-left)) calc(0.55rem + env(safe-area-inset-bottom)) !important;
+    background: rgba(255, 255, 255, 0.84) !important;
+    border-top: 1px solid rgba(59, 130, 246, 0.18) !important;
+    box-shadow: 0 -14px 36px rgba(30, 64, 175, 0.12) !important;
+    gap: 0.35rem;
+}
+
+.nav-item {
+    margin: 0 !important;
+    padding: 0.55rem 0.35rem !important;
+    border-radius: 14px !important;
+    min-width: 0;
+    color: var(--mc-muted) !important;
+}
+
+.nav-item.active {
+    color: var(--mc-blue-deep) !important;
+    background: rgba(59, 130, 246, 0.12) !important;
+    transform: none !important;
+}
+
+.nav-icon {
+    font-size: clamp(1.1rem, 3vw, 1.55rem) !important;
+    margin-bottom: 0.15rem !important;
+}
+
+.nav-item span:last-child,
+.nav-item {
+    overflow-wrap: anywhere;
+}
+
+.emergency-btn {
+    width: 58px !important;
+    height: 58px !important;
+    bottom: calc(82px + env(safe-area-inset-bottom)) !important;
+    right: 1rem !important;
+    background: linear-gradient(135deg, #EF4444, #DC2626) !important;
+    box-shadow: 0 14px 30px rgba(239, 68, 68, 0.34) !important;
+    border: 3px solid rgba(255, 255, 255, 0.55) !important;
+}
+
+@media (max-width: 760px) {
+    .players-grid,
+    .puzzle-wrapper {
+        grid-template-columns: 1fr !important;
+        flex-direction: column !important;
+    }
+
+    .games-grid {
+        grid-template-columns: 1fr !important;
+        height: auto !important;
+    }
+
+    .game-card {
+        min-height: 9rem;
+    }
+}
+
+@media (max-width: 560px) {
+    .header {
+        padding-block: 0.8rem !important;
+    }
+
+    .nav-item {
+        font-size: 0.68rem !important;
+    }
+
+    .emergency-btn {
+        width: 52px !important;
+        height: 52px !important;
+    }
+}

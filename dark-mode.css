@@ -1,0 +1,6 @@
+/* Legacy-page compatibility. The primary app theme is defined in css/tokens.css. */
+@media (prefers-color-scheme: dark) {
+  body:not([data-theme="light"]) {
+    color-scheme: dark;
+  }
+}

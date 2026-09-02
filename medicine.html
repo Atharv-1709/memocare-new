@@ -1,0 +1,76 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medicine Info</title>
+
+<style>
+body{
+font-family:Arial;
+background:#f5f7ff;
+padding:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:20px;
+max-width:400px;
+margin:auto;
+box-shadow:0 10px 20px rgba(0,0,0,0.1);
+}
+
+h2{color:#5A9DF2}
+
+.row{
+display:flex;
+justify-content:space-between;
+margin:10px 0;
+border-bottom:1px solid #eee;
+padding-bottom:5px;
+}
+</style>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link href="app-mobile.css" rel="stylesheet">
+</head>
+
+<body>
+
+<div class="card" id="box">Loading...</div>
+
+<script>
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  })[character]);
+}
+
+let medicines = [];
+try {
+  const stored = JSON.parse(localStorage.getItem("medicines") || "[]");
+  medicines = Array.isArray(stored) ? stored : [];
+} catch (error) {
+  console.error("Could not read saved medicines:", error);
+}
+
+const id = new URLSearchParams(window.location.search).get("id");
+const med = medicines.find(item => String(item.id) === String(id));
+const box = document.getElementById("box");
+
+if (med) {
+  box.innerHTML = `
+    <h2>${escapeHtml(med.name || med.medicineName || "Medicine")}</h2>
+    <div class="row"><span>Time</span><b>${escapeHtml(med.time || "Not set")}</b></div>
+    <div class="row"><span>Dose</span><b>${escapeHtml(med.dose || med.dosage || "Not set")}</b></div>
+    <div class="row"><span>Purpose</span><b>${escapeHtml(med.purpose || med.instructions || "Not set")}</b></div>
+    <p><a href="index.html#medications">Open medication manager</a></p>
+  `;
+} else {
+  box.innerHTML = '<h2>Medicine not found</h2><p><a href="index.html#medications">Open medication manager</a></p>';
+}
+
+</script>
+
+</body>
+</html>

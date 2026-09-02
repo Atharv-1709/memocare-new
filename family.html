@@ -1,0 +1,599 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <title>MEMOCARE - Who's This? (Face Recognition)</title>
+    <script>
+      // This legacy URL is kept for old bookmarks. The maintained family and
+      // face-recognition tools now live inside the main MemoCare application.
+      location.replace("./index.html#recognition");
+    </script>
+    <style>
+        :root {
+            --primary-blue: #5A9DF2; --secondary-purple: #A78BFA; --success-green: #10B981;
+            --soft-white: rgba(255,255,255,0.97); --shadow-soft: 0 10px 30px rgba(0,0,0,0.12);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif; 
+            background: linear-gradient(135deg, #E0F2FE, #FEF3C7); 
+            padding-bottom: 120px;
+        }
+       
+       /* Header */
+        .header {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 3px solid #3B82F6;
+        }
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .logo i {
+            font-size: 2.4rem;
+        }
+        .header-subtitle {
+            color: #475569;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .container { max-width: 700px; margin: 2rem auto; padding: 1rem; }
+        
+        /* Main Title */
+        h2 {
+            margin: 0 0 2rem 0;
+            color: #1E293B;
+            font-size: 2.2rem;
+            font-weight: 700;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            letter-spacing: -0.03em;
+        }
+        h2 i {
+            font-size: 2rem;
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-purple));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Status Indicator */
+        #status {
+            margin: 2rem auto;
+            font-weight: 700;
+            background: rgba(255,255,255,0.9);
+            padding: 1rem 1.5rem;
+            border-radius: 50px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 1.1rem;
+            border: 2px solid #3B82F6;
+            box-shadow: var(--shadow-soft);
+            backdrop-filter: blur(20px);
+            max-width: 95%;
+        }
+
+        /* Video Player */
+        video {
+            width: 100%;
+            max-width: 100%;
+            max-height: 400px;
+            border-radius: 24px;
+            border: 3px solid #3B82F6;
+            margin: 2rem auto;
+            display: block;
+            background: #000;
+            box-shadow: var(--shadow-soft);
+        }
+
+        video:hover {
+            transform: translateY(-6px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        /* Results Container */
+        #result {
+            margin: 2rem auto;
+            background: var(--soft-white);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 2.5rem 2rem;
+            max-width: 100%;
+            border: 2px solid rgba(59,130,246,0.2);
+            min-height: 280px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-soft);
+        }
+
+        /* Face Cards */
+        .face-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 2rem;
+            background: var(--soft-white);
+            border-radius: 24px;
+            border: 2px solid rgba(59, 130, 246, 0.2);
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+            width: 100%;
+            text-align: center;
+            backdrop-filter: blur(20px);
+        }
+
+        .face-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .face-card img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 4px solid #3B82F6;
+            box-shadow: 0 12px 24px rgba(59,130,246,0.3);
+        }
+
+        .face-card:hover img {
+            transform: scale(1.08);
+        }
+
+        .face-card .name {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #1E293B;
+            margin: 0;
+        }
+
+        .face-card .relation {
+            color: #64748B;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .face-card .phone {
+            color: var(--success-green);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 0.5rem 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 0.75rem 1rem;
+            background: rgba(16,185,129,0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(16,185,129,0.2);
+        }
+
+        .face-card .memory {
+            font-style: italic;
+            margin-top: 1rem;
+            font-size: 1rem;
+            background: rgba(59,130,246,0.1);
+            padding: 1.25rem;
+            border-radius: 20px;
+            border-left: 4px solid #3B82F6;
+            color: #1E40AF;
+            line-height: 1.6;
+        }
+
+        .confidence {
+            font-size: 1rem;
+            color: var(--success-green);
+            font-weight: 700;
+            padding: 0.75rem 1.25rem;
+            background: rgba(16,185,129,0.15);
+            border-radius: 25px;
+            border: 2px solid rgba(16,185,129,0.3);
+        }
+
+        /* Unknown Card */
+        .unknown-card {
+            background: linear-gradient(135deg, #FEF3C7, #FED7AA);
+            color: #92400E;
+            padding: 2.5rem;
+            border-radius: 24px;
+            border: 3px solid #F97316;
+            text-align: center;
+            font-weight: 600;
+            box-shadow: var(--shadow-soft);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            backdrop-filter: blur(20px);
+        }
+
+        .unknown-card i {
+            font-size: 4rem;
+            opacity: 0.9;
+        }
+
+        .unknown-card p,
+        .unknown-card span {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+         /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.12);
+            border-top: 4px solid #3B82F6;
+            z-index: 1000;
+        }
+        .nav-item {
+            text-decoration: none;
+            color: #64748B;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.8rem;
+            border-radius: 16px;
+            flex: 1;
+            margin: 0 0.5rem;
+        }
+        .nav-item.active {
+            color: #1E40AF;
+            background: rgba(59,130,246,0.1);
+            transform: scale(1.05);
+        }
+        .nav-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+
+        .emergency-btn { 
+            position: fixed; 
+            bottom: 70px; 
+            right: 1rem; 
+            background: #EF4444; 
+            color: white; 
+            border: none; 
+            width: 55px; 
+            height: 55px; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            z-index: 1000;
+            box-shadow: 0 8px 20px rgba(239,68,68,0.4);
+            font-size: 1.2rem;
+            border: 3px solid rgba(255,255,255,0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .emergency-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 30px rgba(239,68,68,0.6);
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0.5rem;
+                margin: 1rem auto;
+            }
+            h2 {
+                font-size: 1.9rem;
+                gap: 12px;
+            }
+            h2 i {
+                font-size: 1.7rem;
+            }
+            video {
+                max-height: 320px;
+            }
+            #result {
+                padding: 2rem 1.5rem;
+                min-height: 240px;
+            }
+            .face-card img {
+                width: 100px;
+                height: 100px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 0.25rem;
+            }
+            #status {
+                padding: 0.875rem 1.25rem;
+                font-size: 1rem;
+            }
+        }
+    </style>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link href="app-mobile.css" rel="stylesheet">
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <i class="fas fa-user-check"></i> 
+            MEMOCARE
+        </div>
+        <p class="header-subtitle">Face Recognition Memory Assistant</p>
+    </div>
+    
+    <div class="container">
+        <h2>
+            <i class="fas fa-id-card"></i> 
+            Who's This? 
+            <i class="fas fa-smile-wink"></i>
+        </h2>
+
+        <div id="status">Starting camera...</div>
+
+        
+        <video id="video" autoplay muted playsinline></video>
+        
+        <div id="result"></div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <div class="nav-icon"><i class="fas fa-home"></i></div> 
+            Home
+        </a>
+        <a href="routine.html" class="nav-item">
+            <div class="nav-icon"><i class="fas fa-calendar"></i></div> 
+            Routine
+        </a>
+        <a href="games.html" class="nav-item">
+            <div class="nav-icon"><i class="fas fa-brain"></i></div> 
+            Games
+        </a>
+        <a href="caregiver.html" class="nav-item">
+            <div class="nav-icon"><i class="fas fa-shield-alt"></i></div> 
+            Safety
+        </a>
+        <a href="contacts.html" class="nav-item">
+            <div class="nav-icon"><i class="fas fa-users"></i></div> 
+            Family
+        </a>
+    </nav>
+    
+    <button class="emergency-btn" onclick="emergencyAlert()" aria-label="Emergency alert">
+        <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
+    </button>
+
+
+    <!-- Full-screen SOS overlay -->
+    <div id="sosOverlay" style="display:none;" aria-hidden="true">
+      <div id="sosShade" onclick="closeSosOverlay()" role="presentation"></div>
+      <div id="sosModal" role="dialog" aria-modal="true" aria-labelledby="sosTitle">
+        <div class="sosInner">
+          <div id="sosTitle" class="sosTitle">SOS</div>
+          <div class="sosText">No alert has been sent. Open Emergency Help to call or share location.</div>
+          <a class="sosCancel" href="index.html#emergency">Open Emergency Help</a>
+          <button class="sosCancel" type="button" onclick="closeSosOverlay()">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+
+    <style>
+      #sosOverlay{position:fixed;inset:0;z-index:3000;}
+      #sosShade{position:absolute;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);}
+      #sosModal{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:1rem;}
+      .sosInner{width:100%;max-width:420px;background:rgba(255,255,255,0.98);border:3px solid rgba(239,68,68,0.45);border-radius:28px;box-shadow:0 30px 90px rgba(0,0,0,0.4);padding:2rem 1.25rem;text-align:center;}
+      .sosTitle{font-size:3.2rem;font-weight:1000;color:#EF4444;letter-spacing:0.06em;}
+      .sosText{margin-top:0.75rem;font-size:1.25rem;font-weight:800;color:#111827;}
+      .sosCancel{margin-top:1.25rem;width:100%;max-width:260px;border:none;border-radius:999px;padding:0.9rem 1.1rem;background:#E5E7EB;color:#111827;font-weight:900;cursor:pointer;}
+      .sosCancel:active{transform:scale(0.98);}
+    </style>
+
+<script src="https://unpkg.com/face-api.js@0.22.2/dist/face-api.min.js"></script>
+
+
+<script>
+// [JavaScript remains exactly the same - no functional changes]
+window.onload = async () => {
+  const video = document.getElementById("video");
+  const statusDiv = document.getElementById("status");
+  const resultDiv = document.getElementById("result");
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    video.srcObject = stream;
+    await new Promise(resolve => { video.onloadedmetadata = resolve; });
+    statusDiv.innerHTML = "Camera ready. Loading AI models...";
+
+  } catch (err) {
+    statusDiv.innerHTML = "Camera access denied or not available.";
+
+    console.error(err);
+    return;
+  }
+
+  try {
+    if (faceapi && faceapi.tf) {
+      await faceapi.tf.setBackend('cpu');
+    }
+    const MODEL_URL = '/models';
+    await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+    statusDiv.innerHTML = "Models loaded. Loading saved faces...";
+
+  } catch (err) {
+    statusDiv.innerHTML = "Face models not found. Place models in /models folder.";
+
+    console.error(err);
+    return;
+  }
+
+  function readStoredArray(key) {
+    try {
+      const value = JSON.parse(localStorage.getItem(key) || "[]");
+      return Array.isArray(value) ? value : [];
+    } catch (error) {
+      console.error(`Could not read ${key}:`, error);
+      return [];
+    }
+  }
+  let family = readStoredArray("memocare_family");
+  console.log("Loaded family count:", family.length);
+
+  if (family.length === 0) {
+    const oldFamily = readStoredArray("family");
+    if (oldFamily.length > 0) {
+      family = oldFamily;
+      console.log("Using legacy 'family' storage");
+    }
+  }
+
+  const validContacts = family.filter(person => {
+    return person.descriptor &&
+           Array.isArray(person.descriptor) &&
+           person.descriptor.length === 128;
+  });
+
+  if (validContacts.length === 0) {
+    statusDiv.innerHTML = "No valid face signatures found. Add family members with face photos first.";
+
+    resultDiv.innerHTML = `<div class="unknown-card">
+      <i class="fas fa-face-frown"></i>
+      <p>No faces saved yet.<br>Go to Family tab → Add Family Member and take a clear face photo.</p>
+
+    </div>`;
+    return;
+  }
+
+  statusDiv.innerHTML = `${validContacts.length} face(s) ready. Waiting for recognition...`;
+
+
+  const labeledDescriptors = validContacts.map(person => {
+    const desc = person.descriptor instanceof Float32Array 
+      ? person.descriptor 
+      : new Float32Array(person.descriptor);
+    return new faceapi.LabeledFaceDescriptors(person.name, [desc]);
+  });
+
+  const matcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
+
+  setInterval(async () => {
+    if (video.paused || video.ended || !video.readyState) return;
+
+    try {
+      const detections = await faceapi.detectAllFaces(
+        video,
+        new faceapi.TinyFaceDetectorOptions({ inputSize: 320 })
+      ).withFaceLandmarks().withFaceDescriptors();
+
+      if (!detections || detections.length === 0) {
+        resultDiv.innerHTML = `<div class="unknown-card">
+          <i class="fas fa-user-slash"></i> 
+          No face detected
+        </div>`;
+        return;
+      }
+
+      const bestMatch = matcher.findBestMatch(detections[0].descriptor);
+      const matchedPerson = validContacts.find(p => p.name === bestMatch.label);
+
+      if (!matchedPerson || bestMatch.label === "unknown" || bestMatch.distance > 0.6) {
+        resultDiv.innerHTML = `<div class="unknown-card">
+          <i class="fas fa-question-circle"></i> 
+          Unknown person<br>
+          <span>(confidence: ${(1 - bestMatch.distance).toFixed(2)})</span>
+        </div>`;
+        return;
+      }
+
+      resultDiv.innerHTML = `
+        <div class="face-card">
+          <img src="${matchedPerson.image}" alt="${matchedPerson.name}" onerror="this.src='https://ui-avatars.com/api/?background=ACC9FF&color=1A2A44&name=${encodeURIComponent(matchedPerson.name)}'">
+          <div class="name">${escapeHtml(matchedPerson.name)}</div>
+          <div class="relation">${escapeHtml(matchedPerson.relation || '')}</div>
+          ${matchedPerson.phone ? `<div class="phone"><i class="fas fa-phone"></i> ${escapeHtml(matchedPerson.phone)}</div>` : ''}
+          ${matchedPerson.memory ? `<div class="memory">“${escapeHtml(matchedPerson.memory)}”</div>` : ''}
+          <div class="confidence">Match confidence: ${(1 - bestMatch.distance).toFixed(2)}</div>
+
+        </div>
+      `;
+
+      if (matchedPerson.voice) {
+        try {
+          const audio = new Audio(matchedPerson.voice);
+          audio.play().catch(e => console.log("Voice play failed", e));
+        } catch(e) {}
+      }
+
+    } catch (err) {
+      console.error("Recognition loop error:", err);
+      resultDiv.innerHTML = `<div class="unknown-card">Recognition error</div>`;
+
+    }
+  }, 1500);
+};
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>]/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;' })[m]);
+}
+
+function openSosOverlay() {
+  const overlay = document.getElementById('sosOverlay');
+  if (!overlay) return;
+  overlay.style.display = 'block';
+  document.body.style.overflow = 'hidden';
+}
+
+function closeSosOverlay() {
+  const overlay = document.getElementById('sosOverlay');
+  if (!overlay) return;
+  overlay.style.display = 'none';
+  document.body.style.overflow = 'auto';
+}
+
+function emergencyAlert() { 
+    // Full-screen SOS overlay instead of browser alert
+    openSosOverlay();
+  if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]);
+}
+
+
+</script>
+</body>
+</html>
+
+

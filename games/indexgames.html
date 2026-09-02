@@ -1,0 +1,72 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEMOCARE - Memory Games</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#F0F9FF,#FFF5E6);min-height:100vh;}
+        .header{background:rgba(255,255,255,0.94);padding:1rem;text-align:center;backdrop-filter:blur(12px);}
+        .logo{font-size:1.8rem;background:linear-gradient(135deg,#5A9DF2,#A78BFA);-webkit-background-clip:text;background-clip:text;color:transparent;}
+        .container{max-width:800px;margin:2rem auto;padding:1rem;}
+        .games-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1.5rem;}
+        .game-card{background:rgba(255,255,255,0.95);border-radius:32px;padding:2rem 1rem;text-align:center;text-decoration:none;color:#2C3E50;transition:0.2s;box-shadow:0 8px 20px rgba(0,0,0,0.05);display:block;}
+        .game-card:hover{transform:translateY(-5px);background:white;}
+        .game-icon{font-size:3rem;background:linear-gradient(135deg,#5A9DF2,#A78BFA);-webkit-background-clip:text;background-clip:text;color:transparent;}
+        .bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,0.96);display:flex;justify-content:space-around;padding:0.7rem;z-index:1000;}
+        .nav-item{text-decoration:none;color:#8A99AA;display:flex;flex-direction:column;align-items:center;font-size:0.8rem;}
+        .nav-item.active{color:#5A9DF2;}
+        .nav-icon{font-size:1.6rem;}
+        .emergency-btn{position:fixed;bottom:80px;right:1rem;background:#EF4444;color:white;border:none;width:60px;height:60px;border-radius:50%;font-size:1.6rem;cursor:pointer;z-index:1100;}
+        .content{padding-bottom:90px;}
+    </style>
+    <link href="game-theme.css" rel="stylesheet">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link href="../app-mobile.css" rel="stylesheet">
+</head>
+<body>
+    <div class="header"><div class="logo"><i class="fas fa-heartbeat"></i> MEMOCARE</div><div><i class="fas fa-brain"></i> Brain Games</div></div>
+    <div class="content">
+        <div class="container">
+            <div class="games-grid">
+                <!-- THESE LINKS MUST BE EXACTLY AS SHOWN -->
+                <a href="memory-cards.html" class="game-card">
+                    <div class="game-icon"><i class="fas fa-gem"></i></div>
+                    <h3>Memory Cards</h3>
+                    <p>Match the pairs</p>
+                </a>
+                <a href="jigsaw.html" class="game-card">
+                    <div class="game-icon"><i class="fas fa-puzzle-piece"></i></div>
+                    <h3>Jigsaw Puzzle</h3>
+                    <p>Drag & drop pieces</p>
+                </a>
+                <a href="wordsearch.html" class="game-card">
+                    <div class="game-icon"><i class="fas fa-search"></i></div>
+                    <h3>Word Search</h3>
+                    <p>Drag to find words</p>
+                </a>
+                <a href="bingo.html" class="game-card">
+                    <div class="game-icon"><i class="fas fa-dice"></i></div>
+                    <h3>Bingo</h3>
+                    <p>Play with bot</p>
+                </a>
+            </div>
+        </div>
+    </div>
+    <nav class="bottom-nav">
+        <a href="../index.html" class="nav-item"><span class="nav-icon"><i class="fas fa-home"></i></span><span>Home</span></a>
+        <a href="../routine.html" class="nav-item"><span class="nav-icon"><i class="fas fa-calendar"></i></span><span>Routine</span></a>
+        <a href="indexgames.html" class="nav-item active"><span class="nav-icon"><i class="fas fa-brain"></i></span><span>Games</span></a>
+        <a href="../caregiver.html" class="nav-item"><span class="nav-icon"><i class="fas fa-shield-alt"></i></span><span>Safety</span></a>
+        <a href="../contacts.html" class="nav-item"><span class="nav-icon"><i class="fas fa-users"></i></span><span>Family</span></a>
+    </nav>
+    <button class="emergency-btn" id="emergencyBtn"><i class="fas fa-exclamation-triangle"></i></button>
+    <script>document.getElementById('emergencyBtn').onclick=()=>{ window.location.href='../index.html#emergency'; };</script>
+</body>
+</html>
+
+
+
+

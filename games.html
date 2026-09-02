@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MEMOCARE - Memory Games</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #5A9DF2; --secondary-purple: #A78BFA; --success-green: #10B981;
+            --soft-white: rgba(255,255,255,0.97); --shadow-soft: 0 10px 30px rgba(0,0,0,0.12);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: linear-gradient(135deg, #E0F2FE, #FEF3C7); }
+       
+       /* Header */
+        .header {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 3px solid #3B82F6;
+        }
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+        .header-subtitle {
+            color: #475569;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .container { max-width: 700px; margin: 2rem auto; padding: 1rem; }
+        
+        /* **SQUARE 2x2 GRID LAYOUT** */
+        .games-grid { 
+            display: grid; 
+            grid-template-columns: repeat(2, 1fr); /* 2 equal columns */
+            grid-template-rows: repeat(2, 1fr);   /* 2 equal rows */
+            gap: 1.5rem; 
+            height: 600px; /* Fixed height for perfect square proportion */
+            max-width: 650px;
+            margin: 0 auto;
+        }
+        
+        .game-card { 
+            background: var(--soft-white); 
+            border-radius: 24px; 
+            padding: 2.5rem 1.5rem; 
+            text-align: center; 
+            text-decoration: none; 
+            color: inherit; 
+            box-shadow: var(--shadow-soft); 
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .game-card:hover { 
+            transform: translateY(-8px) scale(1.02); 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+        
+        .game-icon { 
+            font-size: 3.5rem; 
+            margin-bottom: 1.2rem; 
+            background: linear-gradient(135deg, var(--primary-blue), var(--secondary-purple)); 
+            -webkit-background-clip: text; 
+            background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+        }
+        
+        .game-card h3 {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #1E293B;
+            margin-bottom: 0.5rem;
+        }
+        
+        .game-card p {
+            color: #64748B;
+            font-size: 1rem;
+            line-height: 1.4;
+        }
+        
+         /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.12);
+            border-top: 4px solid #3B82F6;
+            z-index: 1000;
+        }
+        .nav-item {
+            text-decoration: none;
+            color: #64748B;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.8rem;
+            border-radius: 16px;
+            flex: 1;
+            margin: 0 0.5rem;
+        }
+        .nav-item.active {
+            color: #1E40AF;
+            background: rgba(59,130,246,0.1);
+            transform: scale(1.05);
+        }
+        .nav-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+
+        .emergency-btn { 
+            position: fixed; 
+            bottom: 70px; 
+            right: 1rem; 
+            background: #EF4444; 
+            color: white; 
+            border: none; 
+            width: 55px; 
+            height: 55px; 
+            border-radius: 50%; 
+            cursor: pointer; 
+            z-index: 1000;
+            box-shadow: 0 8px 20px rgba(239,68,68,0.4);
+            font-size: 1.2rem;
+            border: 3px solid rgba(255,255,255,0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .emergency-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 30px rgba(239,68,68,0.6);
+        }
+        
+        .content { padding-bottom: 100px; padding-top: 20px; }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .games-grid {
+                height: 500px;
+                gap: 1rem;
+                max-width: 90vw;
+            }
+            .game-card {
+                padding: 2rem 1rem;
+            }
+            .game-icon {
+                font-size: 3rem;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .games-grid {
+                height: 450px;
+                gap: 0.8rem;
+            }
+            .container {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+    <link href="games/game-theme.css" rel="stylesheet">
+    <link rel="manifest" href="manifest.webmanifest">
+    <link href="app-mobile.css" rel="stylesheet">
+    <link href="chatbot.css" rel="stylesheet">
+
+</head>
+<body>
+    <div class="header">
+        <div class="logo"><i class="fas fa-heartbeat"></i> MEMOCARE</div>
+        <p class="header-subtitle"><i class="fas fa-brain"></i> Memory Games</p>
+    </div>
+    
+    <div class="content">
+        <div class="container">
+            <div class="games-grid">
+                <a href="games/memory-cards.html" class="game-card">
+                    <div class="game-icon"><i class="fas fa-gem"></i></div>
+                    <h3>Memory Cards</h3>
+                    <p>Match the pairs</p>
+                </a>
+                <a href="games/jigsaw.html" class="game-card">
+                    <div class="game-icon"><i class="fas fa-puzzle-piece"></i></div>
+                    <h3>Jigsaw Puzzle</h3>
+                    <p>Complete the picture</p>
+                </a>
+                <a href="games/wordsearch.html" class="game-card">
+                    <div class="game-icon"><i class="fas fa-search"></i></div>
+                    <h3>Word Search</h3>
+                    <p>Find hidden words</p>
+                </a>
+                <a href="games/bingo.html" class="game-card">
+                    <div class="game-icon"><i class="fas fa-dice"></i></div>
+                    <h3>Bingo</h3>
+                    <p>Classic bingo fun</p>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <div class="nav-icon"><i class="fas fa-home"></i></div> 
+            Home
+        </a>
+        <a href="routine.html" class="nav-item">
+            <div class="nav-icon"><i class="fas fa-calendar"></i></div> 
+            Routine
+        </a>
+        <a href="games.html" class="nav-item active">
+            <div class="nav-icon"><i class="fas fa-brain"></i></div> 
+            Games
+        </a>
+        <a href="caregiver.html" class="nav-item">
+            <div class="nav-icon"><i class="fas fa-shield-alt"></i></div> 
+            Safety
+        </a>
+        <a href="contacts.html" class="nav-item">
+            <div class="nav-icon"><i class="fas fa-users"></i></div> 
+            Family
+        </a>
+        <button class="nav-item ai-nav" onclick="document.getElementById('ai-fab').click()" style="background:none;border:none;cursor:pointer;"><span class="nav-icon"><i class="fas fa-robot"></i></span><span>AI</span></button>
+    </nav>
+    
+    <button class="emergency-btn" onclick="emergencyAlert()">
+        <i class="fas fa-exclamation-triangle"></i>
+    </button>
+    
+    <script>
+        function emergencyAlert() {
+            window.location.href = 'index.html#emergency';
+            if(navigator.vibrate) navigator.vibrate([200,100,200,100,200]); 
+        }
+    </script>
+    <script src="chatbot.js"></script>
+</body>
+</html>
+
+
+
+
+
+

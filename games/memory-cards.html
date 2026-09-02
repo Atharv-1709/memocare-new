@@ -1,0 +1,326 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Memory Cards - MEMOCARE</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #F0F9FF, #FFF5E6); 
+            min-height: 100vh;
+        }
+        /* Header */
+        .header {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 3px solid #3B82F6;
+        }
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+        .header-subtitle {
+            color: #475569;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .game-container { 
+            max-width: 600px; 
+            margin: 2rem auto; 
+            padding: 1rem; 
+            text-align: center; 
+        }
+        .stats {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            padding: 0.8rem;
+            background: rgba(255,255,255,0.9);
+            border-radius: 60px;
+            display: inline-block;
+        }
+        .memory-board { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 0.8rem; 
+            margin: 2rem 0; 
+        }
+        .card { 
+            aspect-ratio: 1; 
+            background: linear-gradient(135deg, #5A9DF2, #A78BFA); 
+            border-radius: 16px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 2rem; 
+            cursor: pointer; 
+            transition: all 0.3s ease; 
+            color: white; 
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+            transform-style: preserve-3d;
+        }
+        .card.flipped {
+            background: white;
+            color: #2C3E50;
+            transform: rotateY(180deg);
+        }
+        .card.matched {
+            background: #10B981;
+            cursor: default;
+            transform: scale(0.95);
+        }
+        .card.matched::after {
+            content: "";
+            font-size: 2rem;
+            color: white;
+        }
+        .card.flipped .card-content {
+            display: block;
+        }
+        .btn-primary { 
+            background: linear-gradient(135deg, #5A9DF2, #A78BFA); 
+            color: white; 
+            border: none; 
+            padding: 0.8rem 2rem; 
+            border-radius: 60px; 
+            font-size: 1rem; 
+            cursor: pointer; 
+            margin-top: 1rem;
+            transition: transform 0.2s;
+        }
+        .btn-primary:active { transform: scale(0.96); }
+        .win-message {
+            font-size: 1.3rem;
+            color: #10B981;
+            margin-top: 1rem;
+            font-weight: bold;
+            animation: bounce 0.5s ease;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+         /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.12);
+            border-top: 4px solid #3B82F6;
+            z-index: 1000;
+        }
+        .nav-item {
+            text-decoration: none;
+            color: #64748B;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.8rem;
+            border-radius: 16px;
+            flex: 1;
+            margin: 0 0.5rem;
+        }
+        .nav-item.active {
+            color: #1E40AF;
+            background: rgba(59,130,246,0.1);
+            transform: scale(1.05);
+        }
+        .nav-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+        .emergency-btn { 
+            position: fixed; 
+            bottom: 80px; 
+            right: 1rem; 
+            background: #EF4444; 
+            color: white; 
+            border: none; 
+            width: 60px; 
+            height: 60px; 
+            border-radius: 50%; 
+            font-size: 1.6rem; 
+            cursor: pointer; 
+            z-index: 1100;
+            box-shadow: 0 4px 12px rgba(239,68,68,0.4);
+        }
+        .content { padding-bottom: 90px; }
+    </style>
+    <link href="game-theme.css" rel="stylesheet">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link href="../app-mobile.css" rel="stylesheet">
+</head>
+<body>
+    <div class="header">
+        <div class="logo"><i class="fas fa-heartbeat"></i> MEMOCARE</div>
+        <div><i class="fas fa-gem"></i> Memory Cards Game</div>
+    </div>
+    
+    <div class="content">
+        <div class="game-container">
+            <div class="stats">
+                <i class="fas fa-bullseye"></i> Score: <span id="score">0</span> &nbsp;|&nbsp; 
+                <i class="fas fa-redo-alt"></i> Moves: <span id="moves">0</span> &nbsp;|&nbsp;
+                <i class="fas fa-check-circle"></i> Matched: <span id="matched">0</span>/8
+            </div>
+            <div id="board" class="memory-board"></div>
+            <button class="btn-primary" id="resetBtn"><i class="fas fa-redo-alt"></i> New Game</button>
+            <div id="winMessage" class="win-message"></div>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="indexgames.html" class="nav-item"><span class="nav-icon"><i class="fas fa-brain"></i></span><span>Games</span></a>
+        <a href="memory-cards.html" class="nav-item active"><span class="nav-icon"><i class="fas fa-gem"></i></span><span>Memory Cards</span></a>
+        <a href="jigsaw.html" class="nav-item"><span class="nav-icon"><i class="fas fa-puzzle-piece"></i></span><span>Jigsaw Puzzle</span></a>
+        <a href="wordsearch.html" class="nav-item"><span class="nav-icon"><i class="fas fa-search"></i></span><span>Word Search</span></a>
+        <a href="bingo.html" class="nav-item"><span class="nav-icon"><i class="fas fa-dice"></i></span><span>Bingo</span></a>
+    </nav>
+
+    <button class="emergency-btn" id="emergencyBtn"><i class="fas fa-exclamation-triangle"></i></button>
+
+    <script>
+        const cardIcons = ['SU', 'MO', 'ST', 'HE', 'HO', 'CA', 'MI', 'JO'];
+        let cards = [];
+        let flippedCards = [];
+        let matchedCards = [];
+        let moves = 0;
+        let score = 0;
+        let lockBoard = false;
+        
+        const boardEl = document.getElementById('board');
+        const scoreEl = document.getElementById('score');
+        const movesEl = document.getElementById('moves');
+        const matchedEl = document.getElementById('matched');
+        const winMessageEl = document.getElementById('winMessage');
+        
+        function initGame() {
+            // Create pairs of cards
+            let deck = [...cardIcons, ...cardIcons];
+            // Shuffle
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+            cards = deck;
+            flippedCards = [];
+            matchedCards = [];
+            moves = 0;
+            score = 0;
+            lockBoard = false;
+            winMessageEl.textContent = '';
+            updateStats();
+            renderBoard();
+            speak("New memory game started. Match the pairs!");
+        }
+        
+        function renderBoard() {
+            boardEl.innerHTML = '';
+            cards.forEach((icon, index) => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                
+                if (matchedCards.includes(index)) {
+                    card.classList.add('matched');
+                    card.textContent = 'OK';
+                } else if (flippedCards.includes(index)) {
+                    card.classList.add('flipped');
+                    card.textContent = icon;
+                } else {
+                    card.textContent = '?';
+                }
+                
+                card.onclick = () => flipCard(index);
+                boardEl.appendChild(card);
+            });
+        }
+        
+        function flipCard(index) {
+            if (lockBoard) return;
+            if (matchedCards.includes(index)) return;
+            if (flippedCards.includes(index)) return;
+            
+            flippedCards.push(index);
+            moves++;
+            updateStats();
+            renderBoard();
+            
+            if (flippedCards.length === 2) {
+                lockBoard = true;
+                const card1 = flippedCards[0];
+                const card2 = flippedCards[1];
+                
+                if (cards[card1] === cards[card2]) {
+                    // Match found
+                    setTimeout(() => {
+                        matchedCards.push(card1, card2);
+                        score += 10;
+                        updateStats();
+                        flippedCards = [];
+                        lockBoard = false;
+                        renderBoard();
+                        speak("Great match!");
+                        
+                        if (matchedCards.length === cards.length) {
+                            winMessageEl.textContent = 'Perfect memory! You win!';
+                            speak("Congratulations! You won the game!");
+                        }
+                    }, 500);
+                } else {
+                    // No match
+                    setTimeout(() => {
+                        flippedCards = [];
+                        lockBoard = false;
+                        renderBoard();
+                    }, 800);
+                }
+            }
+        }
+        
+        function updateStats() {
+            scoreEl.textContent = score;
+            movesEl.textContent = moves;
+            matchedEl.textContent = matchedCards.length / 2;
+        }
+        
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        document.getElementById('resetBtn').onclick = initGame;
+        document.getElementById('emergencyBtn').onclick = () => {
+            window.location.href = '../index.html#emergency';
+            if (navigator.vibrate) navigator.vibrate(500);
+        };
+        
+        initGame();
+    </script>
+</body>
+</html>
+
+
+
+
+

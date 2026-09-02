@@ -1,0 +1,494 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Bingo - MEMOCARE</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{font-family:'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#F0F9FF,#FFF5E6);min-height:100vh;overflow-x:hidden;}
+        /* Header */
+        .header {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 3px solid #3B82F6;
+        }
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+        .header-subtitle {
+            color: #475569;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .game-container{max-width:700px;margin:2rem auto;padding:1rem;}
+        .players-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;}
+        .player-card{background:rgba(255,255,255,0.95);border-radius:24px;padding:1rem;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,0.1);}
+        .player-card h3{font-size:1.3rem;margin-bottom:0.5rem;}
+        .player-card .badge{display:inline-block;padding:0.3rem 0.8rem;border-radius:40px;font-size:0.8rem;margin-bottom:0.8rem;}
+        .badge.player{background:#5A9DF2;color:white;}
+        .badge.bot{background:#A78BFA;color:white;}
+        .bingo-board{display:grid;grid-template-columns:repeat(5,1fr);gap:0.5rem;}
+        .bingo-cell{background:linear-gradient(135deg,#5A9DF2,#A78BFA);color:white;border-radius:12px;padding:0.8rem;font-size:1rem;font-weight:bold;cursor:pointer;transition:0.1s;text-align:center;}
+        .bingo-cell.player-cell{cursor:pointer;}
+        .bingo-cell.bot-cell{cursor:default;}
+        .bingo-cell.marked{background:#10B981;transform:scale(0.95);}
+        .caller-area{background:rgba(255,255,255,0.95);border-radius:24px;padding:1.5rem;text-align:center;margin:1rem 0;box-shadow:0 8px 20px rgba(0,0,0,0.1);}
+        .last-number{font-size:3rem;font-weight:bold;background:linear-gradient(135deg,#5A9DF2,#A78BFA);-webkit-background-clip:text;background-clip:text;color:transparent;margin:0.5rem 0;}
+        .call-btn{background:linear-gradient(135deg,#10B981,#34D399);color:white;border:none;padding:1rem 2rem;border-radius:60px;font-size:1.2rem;font-weight:bold;cursor:pointer;margin:0.5rem;transition:0.2s;}
+        .call-btn:active{transform:scale(0.96);}
+        .call-btn:disabled{opacity:0.5;cursor:not-allowed;}
+        .reset-btn{background:linear-gradient(135deg,#F59E0B,#FBBF24);color:white;border:none;padding:0.8rem 1.5rem;border-radius:60px;font-size:1rem;cursor:pointer;margin:0.5rem;}
+        .numbers-called{font-size:0.9rem;color:#6B7A8A;margin-top:0.5rem;}
+        
+        /* WIN/LOSE OVERLAY */
+        .game-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:2000;display:flex;align-items:center;justify-content:center;animation:fadeIn 0.5s ease;}
+        .game-overlay-content{text-align:center;padding:2rem;border-radius:48px;max-width:400px;margin:1rem;animation:slideUp 0.5s ease;}
+        .game-overlay-content.win{background:linear-gradient(135deg,#10B981,#34D399);}
+        .game-overlay-content.lose{background:linear-gradient(135deg,#EF4444,#DC2626);}
+        .game-overlay-content h2{font-size:2.5rem;color:white;margin-bottom:1rem;}
+        .game-overlay-content p{font-size:1.2rem;color:white;margin-bottom:1.5rem;opacity:0.95;}
+        .try-again-btn{background:white;color:#2C3E50;border:none;padding:1rem 2rem;border-radius:60px;font-size:1.2rem;font-weight:bold;cursor:pointer;transition:0.2s;}
+        .try-again-btn:active{transform:scale(0.96);}
+        
+        /* Confetti Canvas */
+        #confetti-canvas{position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1999;}
+        
+        @keyframes fadeIn{from{opacity:0;}to{opacity:1;}}
+        @keyframes slideUp{from{transform:translateY(50px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+        
+       /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.12);
+            border-top: 4px solid #3B82F6;
+            z-index: 1000;
+        }
+        .nav-item {
+            text-decoration: none;
+            color: #64748B;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.8rem;
+            border-radius: 16px;
+            flex: 1;
+            margin: 0 0.5rem;
+        }
+        .nav-item.active {
+            color: #1E40AF;
+            background: rgba(59,130,246,0.1);
+            transform: scale(1.05);
+        }
+        .nav-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+
+        .emergency-btn{position:fixed;bottom:80px;right:1rem;background:#EF4444;color:white;border:none;width:60px;height:60px;border-radius:50%;font-size:1.6rem;cursor:pointer;z-index:1100;}
+        .content{padding-bottom:90px;}
+        
+        @media (max-width:600px){.bingo-cell{padding:0.5rem;font-size:0.8rem;}.last-number{font-size:2rem;}.game-overlay-content h2{font-size:1.8rem;}}
+    </style>
+    <link href="game-theme.css" rel="stylesheet">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link href="../app-mobile.css" rel="stylesheet">
+</head>
+<body>
+    <div class="header"><div class="logo"><i class="fas fa-heartbeat"></i> MEMOCARE</div><div><i class="fas fa-dice"></i> Bingo - Play with Bot</div></div>
+    <div class="content">
+        <div class="game-container">
+            <div class="players-grid">
+                <!-- Player Card -->
+                <div class="player-card">
+                    <h3><i class="fas fa-user"></i> You</h3>
+                    <div class="badge player">Player</div>
+                    <div id="playerBoard" class="bingo-board"></div>
+                </div>
+                <!-- Bot Card -->
+                <div class="player-card bot-card">
+                    <h3><i class="fas fa-robot"></i> Bot</h3>
+                    <div class="badge bot">Computer</div>
+                    <div id="botBoard" class="bingo-board"></div>
+                </div>
+            </div>
+            
+            <div class="caller-area">
+                <div><i class="fas fa-microphone-alt"></i> Last Number Called</div>
+                <div class="last-number" id="lastNumber">-</div>
+                <button class="call-btn" id="callBtn"><i class="fas fa-dice-d6"></i> Call Next Number</button>
+                <button class="reset-btn" id="resetBtn"><i class="fas fa-redo-alt"></i> New Game</button>
+                <div class="numbers-called" id="calledList">Called numbers: none yet</div>
+            </div>
+        </div>
+    </div>
+    
+    <nav class="bottom-nav">
+        <a href="indexgames.html" class="nav-item"><span class="nav-icon"><i class="fas fa-brain"></i></span><span>Games</span></a>
+        <a href="memory-cards.html" class="nav-item"><span class="nav-icon"><i class="fas fa-gem"></i></span><span>Memory Cards</span></a>
+        <a href="jigsaw.html" class="nav-item"><span class="nav-icon"><i class="fas fa-puzzle-piece"></i></span><span>Jigsaw Puzzle</span></a>
+        <a href="wordsearch.html" class="nav-item"><span class="nav-icon"><i class="fas fa-search"></i></span><span>Word Search</span></a>
+        <a href="bingo.html" class="nav-item active"><span class="nav-icon"><i class="fas fa-dice"></i></span><span>Bingo</span></a>
+    </nav>
+    <button class="emergency-btn" id="emergencyBtn"><i class="fas fa-exclamation-triangle"></i></button>
+    
+    <canvas id="confetti-canvas"></canvas>
+
+    <script>
+        let playerNumbers = [];
+        let botNumbers = [];
+        let playerMarked = new Array(25).fill(false);
+        let botMarked = new Array(25).fill(false);
+        let calledNumbers = [];
+        let gameActive = true;
+        let callInProgress = false;
+        
+        let confettiActive = false;
+        let animationId = null;
+        
+        // Generate random Bingo card (25 unique numbers from 1-75)
+        function generateCard() {
+            let nums = [];
+            for(let i = 1; i <= 75; i++) nums.push(i);
+            for(let i = nums.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [nums[i], nums[j]] = [nums[j], nums[i]];
+            }
+            return nums.slice(0, 25);
+        }
+        
+        // Render player board
+        function renderPlayerBoard() {
+            const boardDiv = document.getElementById('playerBoard');
+            boardDiv.innerHTML = '';
+            for(let i = 0; i < 25; i++) {
+                const cell = document.createElement('div');
+                cell.className = `bingo-cell player-cell ${playerMarked[i] ? 'marked' : ''}`;
+                cell.textContent = playerNumbers[i];
+                cell.onclick = () => {
+                    if(!gameActive) return;
+                    if(!playerMarked[i] && calledNumbers.includes(playerNumbers[i])) {
+                        playerMarked[i] = true;
+                        renderPlayerBoard();
+                        speak(`You marked ${playerNumbers[i]}`);
+                        checkWin('player');
+                    } else if(!calledNumbers.includes(playerNumbers[i])) {
+                        speak(`Number ${playerNumbers[i]} hasn't been called yet`);
+                        flashCell(cell);
+                    }
+                };
+                boardDiv.appendChild(cell);
+            }
+        }
+        
+        // Render bot board
+        function renderBotBoard() {
+            const boardDiv = document.getElementById('botBoard');
+            boardDiv.innerHTML = '';
+            for(let i = 0; i < 25; i++) {
+                const cell = document.createElement('div');
+                cell.className = `bingo-cell bot-cell ${botMarked[i] ? 'marked' : ''}`;
+                cell.textContent = botNumbers[i];
+                boardDiv.appendChild(cell);
+            }
+        }
+        
+        // Flash cell for wrong attempt
+        function flashCell(cell) {
+            const originalBg = cell.style.background;
+            cell.style.background = '#EF4444';
+            setTimeout(() => {
+                cell.style.background = originalBg;
+            }, 300);
+        }
+        
+        // Bot automatically marks numbers
+        function botMarkNumber(number) {
+            for(let i = 0; i < 25; i++) {
+                if(botNumbers[i] === number && !botMarked[i]) {
+                    botMarked[i] = true;
+                    renderBotBoard();
+                    return true;
+                }
+            }
+            return false;
+        }
+        
+        // Check win condition (full row, column, or diagonal)
+        function checkWin(player) {
+            const marked = player === 'player' ? playerMarked : botMarked;
+            
+            // Check rows
+            for(let i = 0; i < 5; i++) {
+                let rowFull = true;
+                for(let j = 0; j < 5; j++) {
+                    if(!marked[i*5 + j]) { rowFull = false; break; }
+                }
+                if(rowFull) return true;
+            }
+            
+            // Check columns
+            for(let j = 0; j < 5; j++) {
+                let colFull = true;
+                for(let i = 0; i < 5; i++) {
+                    if(!marked[i*5 + j]) { colFull = false; break; }
+                }
+                if(colFull) return true;
+            }
+            
+            // Check diagonal
+            let diag1Full = true;
+            for(let i = 0; i < 5; i++) {
+                if(!marked[i*5 + i]) { diag1Full = false; break; }
+            }
+            if(diag1Full) return true;
+            
+            let diag2Full = true;
+            for(let i = 0; i < 5; i++) {
+                if(!marked[i*5 + (4-i)]) { diag2Full = false; break; }
+            }
+            return diag2Full;
+        }
+        
+        // Speech function
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.85;
+            utterance.pitch = 1.1;
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        // CONFETTI ANIMATION
+        function startConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            let particles = [];
+            for(let i = 0; i < 150; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 8 + 4,
+                    color: `hsl(${Math.random() * 360}, 70%, 60%)`,
+                    speed: Math.random() * 5 + 3,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 10 - 5
+                });
+            }
+            
+            function animateConfetti() {
+                if(!confettiActive) return;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                let allOffScreen = true;
+                for(let p of particles) {
+                    p.y += p.speed;
+                    p.rotation += p.rotationSpeed;
+                    if(p.y < canvas.height + 100) allOffScreen = false;
+                    
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                    ctx.restore();
+                }
+                
+                if(!allOffScreen) {
+                    animationId = requestAnimationFrame(animateConfetti);
+                } else {
+                    confettiActive = false;
+                    cancelAnimationFrame(animationId);
+                }
+            }
+            
+            confettiActive = true;
+            animateConfetti();
+            
+            // Stop after 5 seconds
+            setTimeout(() => {
+                confettiActive = false;
+                if(animationId) cancelAnimationFrame(animationId);
+            }, 5000);
+        }
+        
+        // Show win/lose overlay
+        function showGameOver(winner) {
+            gameActive = false;
+            document.getElementById('callBtn').disabled = true;
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'game-overlay';
+            
+            if(winner === 'player') {
+                startConfetti();
+                overlay.innerHTML = `
+                    <div class="game-overlay-content win">
+                        <i class="fas fa-trophy" style="font-size:4rem;color:#FFD700;margin-bottom:1rem;display:block;"></i>
+                        <h2>YOU WIN!</h2>
+                        <p>CONGRATULATIONS!</p>
+                        <button class="try-again-btn" onclick="resetGame()"><i class="fas fa-redo-alt"></i> Play Again</button>
+                    </div>
+                `;
+                speak('Congratulations! You win! Amazing job!');
+            } else {
+                overlay.innerHTML = `
+                    <div class="game-overlay-content lose">
+                        <i class="fas fa-frown" style="font-size:4rem;color:white;margin-bottom:1rem;display:block;"></i>
+                        <h2>YOU LOSE</h2>
+                        <p>BETTER LUCK NEXT TIME!</p>
+                        <button class="try-again-btn" onclick="resetGame()"><i class="fas fa-redo-alt"></i> Try Again</button>
+                    </div>
+                `;
+                speak('You lost. Better luck next time!');
+            }
+            
+            document.body.appendChild(overlay);
+        }
+        
+        // Call next number
+        async function callNextNumber() {
+            if(!gameActive || callInProgress) return;
+            callInProgress = true;
+            document.getElementById('callBtn').disabled = true;
+            
+            // Get random number not called yet
+            let available = [];
+            for(let i = 1; i <= 75; i++) {
+                if(!calledNumbers.includes(i)) available.push(i);
+            }
+            
+            if(available.length === 0) {
+                speak('Game over! No more numbers!');
+                callInProgress = false;
+                return;
+            }
+            
+            const randomIndex = Math.floor(Math.random() * available.length);
+            const number = available[randomIndex];
+            calledNumbers.push(number);
+            
+            // Update UI
+            document.getElementById('lastNumber').textContent = number;
+            document.getElementById('calledList').textContent = `Called numbers: ${calledNumbers.join(', ')}`;
+            
+            // Announce number
+            speak(`Number ${number}`);
+            
+            // Bot marks automatically
+            botMarkNumber(number);
+            
+            // Check bot win
+            if(checkWin('bot')) {
+                renderBotBoard();
+                showGameOver('bot');
+                callInProgress = false;
+                return;
+            }
+            
+            // Highlight if player has this number
+            for(let i = 0; i < 25; i++) {
+                if(playerNumbers[i] === number && !playerMarked[i]) {
+                    const cells = document.querySelectorAll('#playerBoard .bingo-cell');
+                    if(cells[i]) {
+                        cells[i].style.animation = 'pulse 0.5s ease';
+                        setTimeout(() => {
+                            if(cells[i]) cells[i].style.animation = '';
+                        }, 500);
+                    }
+                }
+            }
+            
+            callInProgress = false;
+            document.getElementById('callBtn').disabled = false;
+        }
+        
+        // Reset game
+        window.resetGame = function() {
+            // Remove overlay
+            const overlay = document.querySelector('.game-overlay');
+            if(overlay) overlay.remove();
+            
+            // Reset all variables
+            playerNumbers = generateCard();
+            botNumbers = generateCard();
+            playerMarked.fill(false);
+            botMarked.fill(false);
+            calledNumbers = [];
+            gameActive = true;
+            callInProgress = false;
+            
+            // Re-render
+            renderPlayerBoard();
+            renderBotBoard();
+            document.getElementById('lastNumber').textContent = '-';
+            document.getElementById('calledList').textContent = 'Called numbers: none yet';
+            document.getElementById('callBtn').disabled = false;
+            
+            speak('New game started! Good luck!');
+        };
+        
+        // Initialize game
+        function initGame() {
+            playerNumbers = generateCard();
+            botNumbers = generateCard();
+            playerMarked.fill(false);
+            botMarked.fill(false);
+            calledNumbers = [];
+            gameActive = true;
+            renderPlayerBoard();
+            renderBotBoard();
+            speak('Welcome to Bingo! Click Call Number to start.');
+        }
+        
+        // Event listeners
+        document.getElementById('callBtn').onclick = callNextNumber;
+        document.getElementById('resetBtn').onclick = resetGame;
+        document.getElementById('emergencyBtn').onclick = () => {
+            window.location.href = '../index.html#emergency';
+            if(navigator.vibrate) navigator.vibrate(500);
+        };
+        
+        // Add pulse animation to CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0% { transform: scale(1); background: linear-gradient(135deg,#5A9DF2,#A78BFA); }
+                50% { transform: scale(1.1); background: #FBBF24; }
+                100% { transform: scale(1); background: linear-gradient(135deg,#5A9DF2,#A78BFA); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        initGame();
+    </script>
+</body>
+</html>
+
+
+
+

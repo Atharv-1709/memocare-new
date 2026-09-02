@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <title>Memocare
+        Medicine Scanner</title>
+    <style>
+        ** { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
+            background: linear-gradient(135deg, #F8FAFC 0%, #E2E8F0 50%, #F1F5F9 100%);
+            min-height: 100vh;
+            color: #1E293B;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+         /* Header */
+        .header {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 3px solid #3B82F6;
+        }
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+        .header-subtitle {
+            color: #475569;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+  
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .medicine-form {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            border: 2px dashed #667eea;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group label {
+            font-weight: bold;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .form-group input {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+        }
+
+        .qr-section {
+            display: none;
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            margin: 20px 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        #qrcode {
+            width: 250px;
+            height: 250px;
+            margin: 20px auto;
+            border: 5px solid #f8f9fa;
+            border-radius: 15px;
+            background: white;
+        }
+
+        .medicines-list {
+            margin-top: 30px;
+        }
+
+        .medicine-card {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .medicine-info {
+            flex: 1;
+            margin-right: 15px;
+        }
+
+        .scanner-section {
+            text-align: center;
+            margin-top: 40px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 15px;
+        }
+
+        #video {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            border-radius: 15px;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin: 20px 0;
+        }
+
+        .scanner-controls {
+            margin: 20px 0;
+        }
+
+        /* Medicine Details Page */
+        .medicine-details-page {
+            max-width: 600px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+            display: none;
+        }
+
+        .details-header {
+            background: linear-gradient(135deg, #4ecdc4, #44a08d);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .details-content {
+            padding: 40px;
+        }
+
+        .medicine-details-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .detail-item {
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 15px;
+            margin: 15px 0;
+        }
+
+        .detail-label {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        @media (max-width: 768px) {
+            .form-row { grid-template-columns: 1fr; }
+            .medicine-card { flex-direction: column; text-align: center; }
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.12);
+            border-top: 4px solid #3B82F6;
+            z-index: 1000;
+        }
+        .nav-item {
+            text-decoration: none;
+            color: #64748B;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.2rem;
+            border-radius: 16px;
+            flex: 1;
+            margin: 0 0.5rem;
+        }
+        .nav-item.active {
+            color: #1E40AF;
+            background: rgba(59,130,246,0.1);
+            transform: scale(1.05);
+        }
+        .nav-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+    </style>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link href="app-mobile.css" rel="stylesheet">
+    <link href="chatbot.css" rel="stylesheet">
+
+</head>
+<body>
+    <nav class="bottom-nav">
+        <a href="index.html" class="nav-item">
+            <i class="fas fa-home nav-icon"></i><span>Home</span>
+        </a>
+        <a href="routine.html" class="nav-item">
+            <i class="fas fa-calendar nav-icon"></i><span>Routine</span>
+        </a>
+        <a href="games.html" class="nav-item">
+            <i class="fas fa-brain nav-icon"></i><span>Games</span>
+        </a>
+        <a href="caregiver.html" class="nav-item">
+            <i class="fas fa-shield-alt nav-icon"></i><span>Safety</span>
+        </a>
+        <a href="contacts.html" class="nav-item">
+            <i class="fas fa-users nav-icon"></i><span>Family</span>
+        </a>
+        <button class="nav-item ai-nav" onclick="document.getElementById('ai-fab').click()" style="background:none;border:none;cursor:pointer;"><span class="nav-icon"><i class="fas fa-robot"></i></span><span>AI</span></button>
+    </nav>
+
+
+    <div class="container" id="mainPage">
+        <div class="header">
+        <div class="logo">
+            <i class="fas fa-pills"></i> MEMOCARE
+        </div>
+        <div class="header-subtitle">Medicine Scanner</div>
+    </div>
+
+        <div class="main-content">
+            <div class="medicine-form">
+                <h2 style="margin-bottom: 20px; color: #333;">Add Medicine Details</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Medicine Name</label>
+                        <input type="text" id="medicineName" placeholder="e.g., Paracetamol">
+                    </div>
+                    <div class="form-group">
+                        <label>Time</label>
+                        <input type="text" id="time" placeholder="e.g., 8:00 AM, After Meal">
+                    </div>
+                    <div class="form-group">
+                        <label>Purpose</label>
+                        <input type="text" id="purpose" placeholder="e.g., Fever, Pain Relief">
+                    </div>
+                    <div class="form-group">
+                        <label>Dose</label>
+                        <input type="text" id="dose" placeholder="e.g., 500mg, 1 tablet">
+                    </div>
+                </div>
+                <button class="btn btn-success" onclick="generateQR()">Generate QR Code</button>
+                <button class="btn" onclick="addToList()">+ Add to List & Clear</button>
+            </div>
+
+            <div class="qr-section" id="qrSection">
+                <h3>✔ QR Code Generated!</h3>
+                <div id="qrcode"></div>
+                <div style="margin: 20px 0;">
+                    <button class="btn" onclick="downloadQR()">Download QR</button>
+                    <button class="btn" onclick="printQR()">Print QR</button>
+                </div>
+                <div id="qrDetails"></div>
+            </div>
+
+            <div class="medicines-list" id="medicinesList"></div>
+
+            <div class="scanner-section">
+                <h2 style="margin-bottom: 20px; color: #333;">QR Scanner</h2>
+                <div class="scanner-controls">
+                    <button class="btn btn-success" id="scannerBtn" onclick="toggleScanner()">
+                        Open Camera Scanner
+                    </button>
+                    <button class="btn btn-danger" id="stopScanBtn" onclick="stopScanner()" style="display: none;">
+                        Close Camera
+                    </button>
+                </div>
+                <video id="video" autoplay playsinline></video>
+            </div>
+        </div>
+    </div>
+
+    <!-- Medicine Details Page -->
+    <div class="medicine-details-page" id="detailsPage">
+        <div class="details-header">
+            <h1>Medicine Details</h1>
+            <p>Scan successful!</p>
+        </div>
+        <div class="details-content">
+            <div class="medicine-details-card" id="detailsCard"></div>
+            <a href="javascript:showMainPage()" class="back-btn">â† Back to Home</a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+    <script src="https://unpkg.com/@zxing/library@latest/umd/index.min.js"></script>
+
+    <script>
+        function readStoredMedicines() {
+            try {
+                const value = JSON.parse(localStorage.getItem('medicines') || '[]');
+                return Array.isArray(value) ? value : [];
+            } catch (error) {
+                console.error('Could not read saved medicines:', error);
+                return [];
+            }
+        }
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            })[character]);
+        }
+        let medicines = readStoredMedicines();
+        let codeReader = null;
+        let isCameraOpen = false;
+        let currentStream = null;
+
+        window.onload = function() {
+            //NO camera permission check on load!
+            checkMobileQR();
+            displayMedicines();
+            initZXing();
+        };
+
+        function initZXing() {
+            codeReader = new ZXing.BrowserMultiFormatReader();
+        }
+
+        // Check for mobile QR scan on page load
+        function checkMobileQR() {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('scanned') === 'true') {
+                const data = {
+                    medicineName: urlParams.get('name') || 'Unknown',
+                    time: urlParams.get('time') || 'N/A',
+                    purpose: urlParams.get('purpose') || 'N/A',
+                    dose: urlParams.get('dose') || 'N/A'
+                };
+                showMedicineDetails(data);
+            }
+        }
+
+        function generateQRUrl(medicineData) {
+            const params = new URLSearchParams({
+                scanned: 'true',
+                name: medicineData.medicineName,
+                time: medicineData.time,
+                purpose: medicineData.purpose,
+                dose: medicineData.dose
+            });
+            return `${window.location.origin}${window.location.pathname}?${params.toString()}`;
+        }
+
+        function generateQR() {
+            const name = document.getElementById('medicineName').value;
+            const time = document.getElementById('time').value;
+            const purpose = document.getElementById('purpose').value;
+            const dose = document.getElementById('dose').value;
+
+            if (!name || !time || !purpose || !dose) {
+                alert('Please fill all fields!');
+                return;
+            }
+
+            const data = { medicineName: name, time, purpose, dose };
+            const qrUrl = generateQRUrl(data);
+            
+            const qrSection = document.getElementById('qrSection');
+            document.getElementById('qrcode').innerHTML = '';
+            
+            new QRCode(document.getElementById("qrcode"), {
+                text: qrUrl,
+                width: 250,
+                height: 250,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+
+            document.getElementById('qrDetails').innerHTML = `
+                <h4>Ready to scan anywhere</h4>
+                <p><strong>${escapeHtml(name)}</strong></p>
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 10px; margin: 15px 0; font-size: 14px;">
+                    <strong>Mobile Ready:</strong> Works with Google Lens, iPhone Camera, any QR app!
+                </div>
+            `;
+
+            qrSection.style.display = 'block';
+            qrSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function downloadQR() {
+            const qrCanvas = document.querySelector('#qrcode canvas');
+            if (qrCanvas) {
+                const link = document.createElement('a');
+                link.download = 'medicine-qr.png';
+                link.href = qrCanvas.toDataURL();
+                link.click();
+            }
+        }
+
+        function printQR() {
+            window.print();
+        }
+
+        function addToList() {
+            const name = document.getElementById('medicineName').value;
+            if (!name) return alert('Please fill medicine name!');
+            
+            const data = {
+                id: Date.now(),
+                medicineName: name,
+                time: document.getElementById('time').value,
+                purpose: document.getElementById('purpose').value,
+                dose: document.getElementById('dose').value,
+                qrUrl: generateQRUrl({medicineName: name, time: document.getElementById('time').value, purpose: document.getElementById('purpose').value, dose: document.getElementById('dose').value})
+            };
+
+            medicines.unshift(data);
+            localStorage.setItem('medicines', JSON.stringify(medicines));
+            displayMedicines();
+            clearForm();
+            document.getElementById('qrSection').style.display = 'none';
+        }
+
+        function clearForm() {
+            ['medicineName', 'time', 'purpose', 'dose'].forEach(id => {
+                document.getElementById(id).value = '';
+            });
+        }
+
+        function displayMedicines() {
+            const list = document.getElementById('medicinesList');
+            if (medicines.length === 0) {
+                list.innerHTML = '<h2 style="margin-bottom: 20px; color: #333;">Your Medicines</h2><p style="text-align: center; color: #666;">No medicines added yet.</p>';
+                return;
+            }
+
+            list.innerHTML = `<h2 style="margin-bottom: 20px; color: #333;">Your Medicines (${medicines.length})</h2>`;
+            medicines.forEach(medicine => {
+                const card = document.createElement('div');
+                card.className = 'medicine-card';
+                card.innerHTML = `
+                    <div class="medicine-info">
+                        <h4>${escapeHtml(medicine.medicineName)}</h4>
+                        <p><strong>Time: ${escapeHtml(medicine.time)}</strong> | ${escapeHtml(medicine.purpose)}</p>
+                        <p><strong>${escapeHtml(medicine.dose)}</strong></p>
+                    </div>
+                    <div>
+                        <button class="btn" onclick="showQR(decodeURIComponent('${encodeURIComponent(medicine.qrUrl || '')}'))" style="font-size: 14px; padding: 8px 16px; margin-right: 10px;">QR</button>
+                        <button class="btn btn-danger" onclick="removeMedicine(${Number(medicine.id) || 0})" style="font-size: 14px; padding: 8px 16px;">Delete</button>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function showQR(qrUrl) {
+            const qrSection = document.getElementById('qrSection');
+            document.getElementById('qrcode').innerHTML = '';
+            
+            new QRCode(document.getElementById("qrcode"), {
+                text: qrUrl,
+                width: 250,
+                height: 250
+            });
+
+            document.getElementById('qrDetails').innerHTML = `
+                <h4>Ready to scan</h4>
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 10px;">
+                    Works with all mobile scanners!
+                </div>
+            `;
+            qrSection.style.display = 'block';
+            qrSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function removeMedicine(id) {
+            if (confirm('Remove this medicine?')) {
+                medicines = medicines.filter(m => m.id !== id);
+                localStorage.setItem('medicines', JSON.stringify(medicines));
+                displayMedicines();
+            }
+        }
+
+        //PERFECT CAMERA PERMISSION - ONLY ON CLICK
+        function toggleScanner() {
+            const scannerBtn = document.getElementById('scannerBtn');
+            const stopBtn = document.getElementById('stopScanBtn');
+
+            if (isCameraOpen) {
+                stopScanner();
+                return;
+            }
+
+            //Permission requested ONLY when user clicks!
+            navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'environment' } 
+            }).then(stream => {
+                currentStream = stream;
+                startScanner(stream);
+                scannerBtn.innerHTML = 'Camera Active';
+                scannerBtn.className = 'btn btn-danger';
+                stopBtn.style.display = 'inline-block';
+                scannerBtn.style.display = 'none';
+            }).catch(err => {
+                console.log('Camera permission denied:', err);
+                alert('Camera permission required to use scanner. Please allow access.');
+                scannerBtn.innerHTML = 'Camera Permission Denied';
+                scannerBtn.className = 'btn';
+                scannerBtn.disabled = true;
+            });
+        }
+
+        function startScanner(stream) {
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            video.style.display = 'block';
+            isCameraOpen = true;
+
+            codeReader.decodeFromVideoDevice(
+                null, video, 
+                function(result, err) {
+                    if (result) {
+                        handleQRScan(result.text);
+                    }
+                }
+            );
+        }
+
+        function stopScanner() {
+            if (codeReader) {
+                codeReader.reset();
+            }
+            const video = document.getElementById('video');
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+            video.srcObject = null;
+            video.style.display = 'none';
+            isCameraOpen = false;
+
+            const scannerBtn = document.getElementById('scannerBtn');
+            const stopBtn = document.getElementById('stopScanBtn');
+            scannerBtn.innerHTML = 'Open Camera Scanner';
+            scannerBtn.className = 'btn btn-success';
+            scannerBtn.style.display = 'inline-block';
+            scannerBtn.disabled = false;
+            stopBtn.style.display = 'none';
+        }
+
+        function handleQRScan(qrContent) {
+            let data;
+            try {
+                const url = new URL(qrContent, window.location.href);
+                const params = new URLSearchParams(url.search);
+                if (params.get('scanned') === 'true') {
+                    data = {
+                        medicineName: params.get('name')?.slice(0, 120),
+                        time: params.get('time')?.slice(0, 10),
+                        purpose: params.get('purpose')?.slice(0, 500),
+                        dose: params.get('dose')?.slice(0, 100)
+                    };
+                }
+            } catch (error) {
+                console.error('Invalid QR content:', error);
+            }
+            
+            if (data && data.medicineName) {
+                showMedicineDetails(data);
+            } else {
+                alert('Invalid medicine QR code!');
+            }
+        }
+
+        function showMedicineDetails(data) {
+            const detailsCard = document.getElementById('detailsCard');
+            detailsCard.innerHTML = `
+                <div class="detail-item">
+                    <div class="detail-label">Medicine Name</div>
+                    <div class="detail-value">${escapeHtml(data.medicineName || 'N/A')}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Time</div>
+                    <div class="detail-value">${escapeHtml(data.time || 'N/A')}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Purpose</div>
+                    <div class="detail-value">${escapeHtml(data.purpose || 'N/A')}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Dose</div>
+                    <div class="detail-value">${escapeHtml(data.dose || 'N/A')}</div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Scanned</div>
+                    <div class="detail-value">${new Date().toLocaleString()}</div>
+                </div>
+            `;
+
+            document.getElementById('mainPage').style.display = 'none';
+            document.getElementById('detailsPage').style.display = 'block';
+            document.documentElement.scrollTop = 0;
+        }
+
+        function showMainPage() {
+            document.getElementById('detailsPage').style.display = 'none';
+            document.getElementById('mainPage').style.display = 'block';
+            window.scrollTo(0, 0);
+        }
+
+        window.addEventListener('beforeunload', function() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+            }
+        });
+    </script>
+    <script src="chatbot.js"></script>
+</body>
+</html>

@@ -1,0 +1,727 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Jigsaw Puzzle - MEMOCARE</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+            background: linear-gradient(135deg, #F0F9FF, #FFF5E6); 
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+   
+         /* Header */
+        .header {
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            padding: 1.5rem 1rem;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 3px solid #3B82F6;
+        }
+        .logo {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1E40AF, #3B82F6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+        .header-subtitle {
+            color: #475569;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+        .game-container { 
+            max-width: 900px; 
+            margin: 2rem auto; 
+            padding: 1rem; 
+            text-align: center; 
+        }
+        
+        /* Puzzle Grid Layout - Side by Side */
+        .puzzle-wrapper {
+            display: flex;
+            gap: 2rem;
+            justify-content: center;
+            align-items: flex-start;
+            margin: 1rem 0;
+            flex-wrap: nowrap;
+        }
+        
+        /* Drop Zone - Where pieces should go (shows grid) - LEFT SIDE */
+        .drop-zone {
+            background: #E2E8F0;
+            border-radius: 24px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border: 3px solid #5A9DF2;
+            flex: 1;
+            max-width: 450px;
+        }
+        
+        .drop-zone h3 {
+            margin-bottom: 1.5rem;
+            color: #2C3E50;
+            font-size: 1.3rem;
+        }
+        
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            width: 100%;
+            max-width: 400px;
+            height: 400px;
+            margin: 0 auto;
+            background: #CBD5E1;
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .grid-slot {
+            background: rgba(255,255,255,0.3);
+            border: 1px dashed #5A9DF2;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .grid-slot.filled {
+            background: rgba(16,185,129,0.2);
+            border: 2px solid #10B981;
+        }
+        
+        .piece-in-slot {
+            width: 100%;
+            height: 100%;
+            background-size: 400px 400px;
+            border-radius: 8px;
+        }
+        
+        /* Pieces Area - Where scrambled pieces are - RIGHT SIDE */
+        .pieces-area {
+            background: #F1F5F9;
+            border-radius: 24px;
+            padding: 1.5rem;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            flex: 1;
+            max-width: 350px;
+            height: fit-content;
+        }
+        
+        .pieces-area h3 {
+            margin-bottom: 1rem;
+            color: #2C3E50;
+            font-size: 1.3rem;
+        }
+        
+        .pieces-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.8rem;
+            min-height: 350px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .puzzle-piece {
+            aspect-ratio: 1;
+            background-size: 400px 400px;
+            cursor: grab;
+            transition: all 0.2s ease;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            border: 2px solid white;
+        }
+        
+        .puzzle-piece:active {
+            cursor: grabbing;
+            transform: scale(0.98);
+        }
+        
+        .puzzle-piece.dragging {
+            opacity: 0.5;
+        }
+        
+        .stats {
+            margin: 1rem 0;
+            font-size: 1.1rem;
+            padding: 0.8rem 2rem;
+            background: rgba(255,255,255,0.9);
+            border-radius: 60px;
+            display: inline-block;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .btn-primary { 
+            background: linear-gradient(135deg, #5A9DF2, #A78BFA); 
+            color: white; 
+            border: none; 
+            padding: 0.8rem 2rem; 
+            border-radius: 60px; 
+            font-size: 1rem; 
+            cursor: pointer; 
+            margin: 0.5rem;
+            transition: transform 0.2s;
+        }
+        
+        .btn-primary:active { transform: scale(0.96); }
+        
+        /* Confetti Canvas */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2000;
+        }
+        
+        /* Win Overlay */
+        .game-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 3000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .game-overlay-content {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 48px;
+            max-width: 400px;
+            margin: 1rem;
+            animation: slideUp 0.5s ease;
+        }
+        
+        .game-overlay-content.win {
+            background: linear-gradient(135deg, #10B981, #34D399);
+        }
+        
+        .game-overlay-content.lose {
+            background: linear-gradient(135deg, #EF4444, #DC2626);
+        }
+        
+        .game-overlay-content h2 {
+            font-size: 2.5rem;
+            color: white;
+            margin-bottom: 1rem;
+        }
+        
+        .game-overlay-content p {
+            font-size: 1.2rem;
+            color: white;
+            margin-bottom: 1.5rem;
+            opacity: 0.95;
+        }
+        
+        .try-again-btn {
+            background: white;
+            color: #2C3E50;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 60px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        
+        .try-again-btn:active { transform: scale(0.96); }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+         /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255,255,255,0.98);
+            backdrop-filter: blur(20px);
+            display: flex;
+            justify-content: space-around;
+            padding: 1rem;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.12);
+            border-top: 4px solid #3B82F6;
+            z-index: 1000;
+        }
+        .nav-item {
+            text-decoration: none;
+            color: #64748B;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            padding: 0.8rem;
+            border-radius: 16px;
+            flex: 1;
+            margin: 0 0.5rem;
+        }
+        .nav-item.active {
+            color: #1E40AF;
+            background: rgba(59,130,246,0.1);
+            transform: scale(1.05);
+        }
+        .nav-icon { font-size: 1.8rem; margin-bottom: 0.4rem; }
+        .emergency-btn { 
+            position: fixed; 
+            bottom: 80px; 
+            right: 1rem; 
+            background: #EF4444; 
+            color: white; 
+            border: none; 
+            width: 60px; 
+            height: 60px; 
+            border-radius: 50%; 
+            font-size: 1.6rem; 
+            cursor: pointer; 
+            z-index: 1100;
+            box-shadow: 0 4px 12px rgba(239,68,68,0.4);
+        }
+        
+        .content { padding-bottom: 90px; }
+        
+        @media (max-width: 900px) {
+            .puzzle-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+            .drop-zone, .pieces-area {
+                max-width: 100%;
+                width: 100%;
+            }
+            .grid-container { 
+                width: 300px; 
+                height: 300px; 
+            }
+            .pieces-grid { 
+                min-height: 300px; 
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .game-container { padding: 0.5rem; }
+            .drop-zone, .pieces-area { padding: 1rem; }
+        }
+    </style>
+    <link href="game-theme.css" rel="stylesheet">
+    <link rel="manifest" href="../manifest.webmanifest">
+    <link href="../app-mobile.css" rel="stylesheet">
+</head>
+<body>
+    <div class="header">
+        <div class="logo"><i class="fas fa-heartbeat"></i> MEMOCARE</div>
+        <div><i class="fas fa-puzzle-piece"></i> Jigsaw Puzzle</div>
+    </div>
+    
+    <div class="content">
+        <div class="game-container">
+            <div class="stats">
+                <i class="fas fa-chart-simple"></i> Pieces Placed: <span id="piecesPlaced">0</span> / 16
+            </div>
+            
+            <div class="puzzle-wrapper">
+                <!-- Drop Zone (Grid where pieces go) - LEFT SIDE -->
+                <div class="drop-zone">
+                    <h3><i class="fas fa-border-all"></i> Puzzle Grid</h3>
+                    <div id="gridContainer" class="grid-container"></div>
+                </div>
+                
+                <!-- Pieces Area (Scrambled pieces) - RIGHT SIDE -->
+                <div class="pieces-area">
+                    <h3><i class="fas fa-puzzle-piece"></i> Pieces to Place</h3>
+                    <div id="piecesGrid" class="pieces-grid"></div>
+                </div>
+            </div>
+            
+            <button class="btn-primary" id="resetBtn"><i class="fas fa-shuffle"></i> Shuffle Pieces</button>
+        </div>
+    </div>
+
+   
+    <nav class="bottom-nav">
+        <a href="indexgames.html" class="nav-item"><span class="nav-icon"><i class="fas fa-brain"></i></span><span>Games</span></a>
+        <a href="memory-cards.html" class="nav-item"><span class="nav-icon"><i class="fas fa-gem"></i></span><span>Memory Cards</span></a>
+        <a href="jigsaw.html" class="nav-item active"><span class="nav-icon"><i class="fas fa-puzzle-piece"></i></span><span>Jigsaw Puzzle</span></a>
+        <a href="wordsearch.html" class="nav-item"><span class="nav-icon"><i class="fas fa-search"></i></span><span>Word Search</span></a>
+        <a href="bingo.html" class="nav-item"><span class="nav-icon"><i class="fas fa-dice"></i></span><span>Bingo</span></a>
+    </nav>
+
+    <button class="emergency-btn" id="emergencyBtn"><i class="fas fa-exclamation-triangle"></i></button>
+    
+    <canvas id="confetti-canvas"></canvas>
+
+    <script>
+        const GRID_SIZE = 4;
+        const PUZZLE_SIZE = 400;
+        const PIECE_SIZE = PUZZLE_SIZE / GRID_SIZE;
+        
+        let piecesData = [];
+        let gridSlots = Array(16).fill(null);
+        let placedCount = 0;
+        let confettiActive = false;
+        let animationId = null;
+        
+        // Generate puzzle image (beautiful gradient with MEMOCARE branding)
+        function generatePuzzleImage() {
+            const canvas = document.createElement('canvas');
+            canvas.width = PUZZLE_SIZE;
+            canvas.height = PUZZLE_SIZE;
+            const ctx = canvas.getContext('2d');
+            
+            // Gradient background
+            const gradient = ctx.createLinearGradient(0, 0, PUZZLE_SIZE, PUZZLE_SIZE);
+            gradient.addColorStop(0, '#5A9DF2');
+            gradient.addColorStop(0.3, '#A78BFA');
+            gradient.addColorStop(0.7, '#FBBF24');
+            gradient.addColorStop(1, '#10B981');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, PUZZLE_SIZE, PUZZLE_SIZE);
+            
+            // Decorative patterns
+            ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+            ctx.lineWidth = 2;
+            for(let i = 0; i <= GRID_SIZE; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * PIECE_SIZE, 0);
+                ctx.lineTo(i * PIECE_SIZE, PUZZLE_SIZE);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, i * PIECE_SIZE);
+                ctx.lineTo(PUZZLE_SIZE, i * PIECE_SIZE);
+                ctx.stroke();
+            }
+            
+            // Center text
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 36px "Segoe UI"';
+            ctx.textAlign = 'center';
+            ctx.fillText('MEMO', PUZZLE_SIZE/2, PUZZLE_SIZE/2 - 20);
+            ctx.font = 'bold 24px "Segoe UI"';
+            ctx.fillText('MEMOCARE', PUZZLE_SIZE/2, PUZZLE_SIZE/2 + 40);
+            ctx.font = '18px "Segoe UI"';
+            ctx.fillText('Jigsaw Puzzle', PUZZLE_SIZE/2, PUZZLE_SIZE/2 + 80);
+            
+            return canvas.toDataURL();
+        }
+        
+        const puzzleImage = generatePuzzleImage();
+        
+        // Initialize pieces
+        function initPieces() {
+            piecesData = [];
+            for(let row = 0; row < GRID_SIZE; row++) {
+                for(let col = 0; col < GRID_SIZE; col++) {
+                    piecesData.push({
+                        id: row * GRID_SIZE + col,
+                        targetRow: row,
+                        targetCol: col,
+                        currentRow: row,
+                        currentCol: col,
+                        isPlaced: false
+                    });
+                }
+            }
+            // Scramble pieces
+            shufflePieces();
+        }
+        
+        function shufflePieces() {
+            // Randomly assign pieces to different positions
+            const positions = [];
+            for(let i = 0; i < 16; i++) {
+                positions.push({ row: Math.floor(i / GRID_SIZE), col: i % GRID_SIZE });
+            }
+            for(let i = positions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [positions[i], positions[j]] = [positions[j], positions[i]];
+            }
+            
+            piecesData.forEach((piece, index) => {
+                piece.currentRow = positions[index].row;
+                piece.currentCol = positions[index].col;
+                piece.isPlaced = false;
+            });
+            
+            // Clear grid slots
+            gridSlots.fill(null);
+            placedCount = 0;
+            updatePlacedCount();
+        }
+        
+        // Render the grid (drop zone)
+        function renderGrid() {
+            const gridContainer = document.getElementById('gridContainer');
+            gridContainer.innerHTML = '';
+            
+            for(let row = 0; row < GRID_SIZE; row++) {
+                for(let col = 0; col < GRID_SIZE; col++) {
+                    const slotIndex = row * GRID_SIZE + col;
+                    const slot = document.createElement('div');
+                    slot.className = 'grid-slot';
+                    slot.setAttribute('data-row', row);
+                    slot.setAttribute('data-col', col);
+                    slot.setAttribute('data-slot-index', slotIndex);
+                    
+                    if(gridSlots[slotIndex]) {
+                        slot.classList.add('filled');
+                        const piece = gridSlots[slotIndex];
+                        const pieceDiv = document.createElement('div');
+                        pieceDiv.className = 'piece-in-slot';
+                        pieceDiv.style.backgroundImage = `url(${puzzleImage})`;
+                        pieceDiv.style.backgroundSize = `${PUZZLE_SIZE}px ${PUZZLE_SIZE}px`;
+                        pieceDiv.style.backgroundPosition = `-${piece.targetCol * PIECE_SIZE}px -${piece.targetRow * PIECE_SIZE}px`;
+                        slot.appendChild(pieceDiv);
+                    }
+                    
+                    // Drop zone events
+                    slot.addEventListener('dragover', (e) => {
+                        e.preventDefault();
+                        slot.style.backgroundColor = 'rgba(90,157,242,0.3)';
+                    });
+                    slot.addEventListener('dragleave', () => {
+                        if (!slot.querySelector('.piece-in-slot')) {
+                            slot.style.backgroundColor = '';
+                        }
+                    });
+                    slot.addEventListener('drop', handleDropOnGrid);
+                    
+                    gridContainer.appendChild(slot);
+                }
+            }
+        }
+        
+        // Render the pieces area - **CHANGED: Only shows unplaced pieces, no new pieces added**
+        function renderPiecesArea() {
+            const piecesGrid = document.getElementById('piecesGrid');
+            piecesGrid.innerHTML = '';
+            
+            const unplacedPieces = piecesData.filter(p => !p.isPlaced);
+            
+            unplacedPieces.forEach(piece => {
+                const pieceDiv = document.createElement('div');
+                pieceDiv.className = 'puzzle-piece';
+                pieceDiv.setAttribute('data-piece-id', piece.id);
+                pieceDiv.style.backgroundImage = `url(${puzzleImage})`;
+                pieceDiv.style.backgroundSize = `${PUZZLE_SIZE}px ${PUZZLE_SIZE}px`;
+                pieceDiv.style.backgroundPosition = `-${piece.targetCol * PIECE_SIZE}px -${piece.targetRow * PIECE_SIZE}px`;
+                
+                pieceDiv.draggable = true;
+                pieceDiv.addEventListener('dragstart', handleDragStart);
+                pieceDiv.addEventListener('dragend', handleDragEnd);
+                
+                piecesGrid.appendChild(pieceDiv);
+            });
+        }
+        
+        let draggedPieceId = null;
+        
+        function handleDragStart(e) {
+            draggedPieceId = parseInt(e.target.getAttribute('data-piece-id'));
+            e.target.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', draggedPieceId);
+            e.dataTransfer.effectAllowed = 'move';
+        }
+        
+        function handleDragEnd(e) {
+            e.target.classList.remove('dragging');
+            draggedPieceId = null;
+        }
+        
+        function handleDropOnGrid(e) {
+            e.preventDefault();
+            const targetSlot = e.target.closest('.grid-slot');
+            if(!targetSlot) return;
+            
+            const slotRow = parseInt(targetSlot.getAttribute('data-row'));
+            const slotCol = parseInt(targetSlot.getAttribute('data-col'));
+            const slotIndex = parseInt(targetSlot.getAttribute('data-slot-index'));
+            
+            if(!draggedPieceId) return;
+            
+            const piece = piecesData.find(p => p.id === draggedPieceId);
+            if(!piece || piece.isPlaced) return;
+            
+            // Check if piece belongs in this slot
+            if(piece.targetRow === slotRow && piece.targetCol === slotCol) {
+                // CORRECT placement - **CHANGED: Piece is removed from pieces area permanently**
+                piece.isPlaced = true;
+                gridSlots[slotIndex] = piece;
+                placedCount++;
+                updatePlacedCount();
+                
+                // Only update displays - no new pieces added
+                renderPiecesArea();
+                renderGrid();
+                
+                speak("Piece placed correctly!");
+                
+                // Check win
+                if(placedCount === 16) {
+                    showWin();
+                }
+            } else {
+                // WRONG placement - flash red
+                targetSlot.style.backgroundColor = '#EF4444';
+                setTimeout(() => {
+                    targetSlot.style.backgroundColor = '';
+                }, 300);
+                speak("Wrong position, try again");
+            }
+        }
+        
+        function updatePlacedCount() {
+            document.getElementById('piecesPlaced').textContent = placedCount;
+        }
+        
+        // CONFETTI ANIMATION
+        function startConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            let particles = [];
+            for(let i = 0; i < 200; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    size: Math.random() * 10 + 5,
+                    color: `hsl(${Math.random() * 360}, 80%, 60%)`,
+                    speed: Math.random() * 8 + 4,
+                    rotation: Math.random() * 360,
+                    rotationSpeed: Math.random() * 15 - 7
+                });
+            }
+            
+            function animateConfetti() {
+                if(!confettiActive) return;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                let allOffScreen = true;
+                for(let p of particles) {
+                    p.y += p.speed;
+                    p.rotation += p.rotationSpeed;
+                    if(p.y < canvas.height + 100) allOffScreen = false;
+                    
+                    ctx.save();
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.rotation * Math.PI / 180);
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size);
+                    ctx.restore();
+                }
+                
+                if(!allOffScreen) {
+                    animationId = requestAnimationFrame(animateConfetti);
+                } else {
+                    confettiActive = false;
+                    cancelAnimationFrame(animationId);
+                }
+            }
+            
+            confettiActive = true;
+            animateConfetti();
+            
+            setTimeout(() => {
+                confettiActive = false;
+                if(animationId) cancelAnimationFrame(animationId);
+            }, 5000);
+        }
+        
+        // Show win overlay with confetti
+        function showWin() {
+            startConfetti();
+            speak("Congratulations! You solved the puzzle!");
+            
+            const overlay = document.createElement('div');
+            overlay.className = 'game-overlay';
+            overlay.innerHTML = `
+                <div class="game-overlay-content win">
+                    <i class="fas fa-trophy" style="font-size:4rem;color:#FFD700;margin-bottom:1rem;display:block;"></i>
+                    <h2>YOU WIN!</h2>
+                    <p>PERFECT PUZZLE SOLVING!</p>
+                    <button class="try-again-btn" onclick="resetGame()"><i class="fas fa-redo-alt"></i> Play Again</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        
+        function speak(text) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        function resetGame() {
+            // Remove overlay if exists
+            const overlay = document.querySelector('.game-overlay');
+            if(overlay) overlay.remove();
+            
+            // Reset confetti
+            confettiActive = false;
+            if(animationId) cancelAnimationFrame(animationId);
+            
+            // Reset game state
+            initPieces();
+            renderGrid();
+            renderPiecesArea();
+            speak("New puzzle! Drag pieces to the correct spots on the grid.");
+        }
+        
+        // Initialize everything
+        function initGame() {
+            initPieces();
+            renderGrid();
+            renderPiecesArea();
+            speak("Jigsaw puzzle. Drag each piece from the right side to its matching spot on the grid.");
+        }
+        
+        document.getElementById('resetBtn').onclick = resetGame;
+        document.getElementById('emergencyBtn').onclick = () => {
+            window.location.href = '../index.html#emergency';
+            if(navigator.vibrate) navigator.vibrate(500);
+        };
+        
+        // Make resetGame available globally for the overlay button
+        window.resetGame = resetGame;
+        
+        initGame();
+    </script>
+</body>
+</html>
+
+
+
+
