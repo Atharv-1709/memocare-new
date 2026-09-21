@@ -27,4 +27,11 @@
  *  or private keys here.
  * ──────────────────────────────────────────────────────────────────────────
  */
-export const firebaseConfig = null;
+export const firebaseConfig = {
+  apiKey: "AIzaSyAP2jwnWdLQwlupbWjYLCKIFaGpdqQaR6w",
+  authDomain: "memocare-new.firebaseapp.com",
+  projectId: "memocare-new",
+  storageBucket: "memocare-new.firebasestorage.app",
+  messagingSenderId: "734803503189",
+  appId: "1:734803503189:web:41375598a151c8f7718cdc"
+};
