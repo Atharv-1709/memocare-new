@@ -477,12 +477,12 @@ export function syncLinkCardMarkup(role = "caregiver") {
         ` : `
           <div class="form-grid" style="margin-top:.5rem">
             <div class="field field-full">
-              <label for="sync-join-input" style="font-size:1.05rem;font-weight:700">${isPatient ? "Enter Room Code from Caregiver" : "Enter 6-Character Room Code"}</label>
-              <p style="margin:0 0 .5rem;color:var(--text-muted);font-size:.9rem">${isPatient ? "Type the 6-character code shown on your caregiver's screen to connect your device." : "Generate a new room code to share with the patient, or enter an existing code."}</p>
+              <label for="sync-join-input" style="font-size:1.05rem;font-weight:700">Enter 6-Character Room Code</label>
+              <p style="margin:0 0 .5rem;color:var(--text-muted);font-size:.9rem">Enter an existing room code to join, or generate a new one to share with the other device.</p>
               <div style="display:flex;flex-wrap:wrap;gap:.65rem;align-items:center">
                 <input id="sync-join-input" type="text" maxlength="6" placeholder="e.g. ABC123" style="text-transform:uppercase;letter-spacing:.2em;font-family:monospace;font-size:1.25rem;font-weight:800;max-width:12rem;text-align:center;padding:.65rem;border-radius:14px">
-                <button class="button button-primary" type="button" data-sync-action="join">&#128279; ${isPatient ? "Connect to Caregiver" : "Join Room"}</button>
-                ${!isPatient ? '<button class="button button-secondary" type="button" data-sync-action="create">&#10010; Generate New Code</button>' : ''}
+                <button class="button button-primary" type="button" data-sync-action="join">&#128279; Join Room</button>
+                <button class="button button-secondary" type="button" data-sync-action="create">&#10010; Generate New Code</button>
               </div>
             </div>
           </div>
