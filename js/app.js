@@ -3,6 +3,7 @@ import { routes, currentRoute, navigate, setupRouter } from "./router.js";
 import { getLanguageMeta, setLanguage, t, languageOptions } from "./i18n.js";
 import { setupAccessibility, applyAccessibility } from "./accessibility.js";
 import { auth, setupAuthUI } from "./auth.js";
+import { sync } from "./sync.js";
 import { setupVoiceControls, speechControlsMarkup, voice } from "./voice.js";
 import { toast, requestNotificationPermission } from "./notifications.js";
 import {
@@ -24,7 +25,7 @@ import {
 } from "./assistance.js";
 import { handleMapAction, maps, placesPage } from "./maps.js";
 import { $, escapeHtml, formatDate, formatTime, downloadJson, readFileAsText, uid } from "./utils.js";
-import { alarms, deliverCaregiverAlert, offerCaregiverHandoff } from "./alerts.js";
+import { alarms, deliverCaregiverAlert, emergencyContact, offerCaregiverHandoff } from "./alerts.js";
 import { gamesPage, handleGameAction } from "./games.js";
 import { faceRecognition, handleFaceAction, recognitionPage } from "./recognition.js";
 import { aiPage, handleAiAction, setupAiForm } from "./ai.js";
@@ -75,7 +76,10 @@ function renderNavigation() {
 }
 
 function profileInitials() {
-  const name = store.data.profile.name || "Guest";
+  const isCaregiver = store.data.profile.role === "caregiver";
+  const name = isCaregiver
+    ? (store.data.profile.caregiverName || (store.data.profile.role === "caregiver" ? store.data.profile.name : "") || "Caregiver")
+    : (store.data.profile.patientName || (store.data.profile.role === "patient" ? store.data.profile.name : "") || "Guest");
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase() || "G";
 }
 
@@ -110,12 +114,16 @@ function homePage() {
   const due = dueMedications();
   const nextDose = due.find((medication) => doseStatus(medication.id) === "due");
 
+  const isCaregiver = store.data.profile.role === "caregiver";
+  const activeName = isCaregiver
+    ? (store.data.profile.caregiverName || (store.data.profile.role === "caregiver" ? store.data.profile.name : ""))
+    : (store.data.profile.patientName || (store.data.profile.role === "patient" ? store.data.profile.name : ""));
 
   const people = store.data.people.slice(0, 3);
   if (store.data.settings.simplified) {
     return `
       <section class="page-section simplified-home">
-        <article class="card hero-card"><p class="eyebrow">${formatDate(now, locale, { weekday: "long", day: "numeric", month: "long" })}</p><h2>${escapeHtml(greeting)}${store.data.profile.name ? `, ${escapeHtml(store.data.profile.name)}` : ""}.</h2><p class="orientation-clock">${new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(now)}</p></article>
+        <article class="card hero-card"><p class="eyebrow">${formatDate(now, locale, { weekday: "long", day: "numeric", month: "long" })}</p><h2>${escapeHtml(greeting)}${activeName ? `, ${escapeHtml(activeName)}` : ""}.</h2><p class="orientation-clock">${new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(now)}</p></article>
         <div class="simple-action-grid">
           <button class="simple-action" type="button" data-route-action="medications"><span aria-hidden="true">✚</span><strong>My medicines</strong></button>
           <button class="simple-action" type="button" data-action="check-in"><span aria-hidden="true">✓</span><strong>I am okay</strong></button>
@@ -131,8 +139,8 @@ function homePage() {
   return `
     <section class="page-section">
       <article class="card hero-card">
-        <p class="eyebrow">${store.data.profile.role === "caregiver" ? "Caregiver panel · " : "Patient panel · "}${formatDate(now, locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
-        <h2>${escapeHtml(greeting)}${store.data.profile.name ? `, ${escapeHtml(store.data.profile.name)}` : ""}.</h2>
+        <p class="eyebrow">${isCaregiver ? "Caregiver panel · " : "Patient panel · "}${formatDate(now, locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
+        <h2>${escapeHtml(greeting)}${activeName ? `, ${escapeHtml(activeName)}` : ""}.</h2>
         <p>${t("home.subtitle")} Take your time—MemoCare is ready to guide you one step at a time.</p>
         <div class="hero-actions">
           <button class="button button-primary" type="button" data-action="voice-help">${t("home.voice")}</button>
@@ -155,6 +163,7 @@ function homePage() {
         <article class="card span-5">
           <div class="card-header"><div><h3>${t("home.question")}</h3><p class="card-subtitle">Clear shortcuts with labels.</p></div></div>
           <div class="quick-grid">
+            <button class="quick-action" type="button" data-route-action="medications"><span>✚</span><span><strong>${t("nav.medications")}</strong><small>Medication schedule</small></span></button>
             <button class="quick-action" type="button" data-route-action="today"><span>◷</span><span><strong>Today's plan</strong><small>Routines and appointments</small></span></button>
             <button class="quick-action" type="button" data-route-action="places"><span>⌖</span><span><strong>Find home</strong><small>Safe places and directions</small></span></button>
             <button class="quick-action" type="button" data-route-action="people"><span>☺</span><span><strong>Call family</strong><small>Important people</small></span></button>
@@ -195,7 +204,7 @@ function settingsPage() {
         <article class="card span-6">
           <div class="card-header"><div><h3>Profile and language</h3><p class="card-subtitle">${auth.user ? `Signed in as ${escapeHtml(auth.user.email || auth.user.phoneNumber || auth.user.uid)}` : "Guest mode · data stays in this browser"}</p></div></div>
           <div class="form-grid">
-            <div class="field"><label for="settings-name">Name</label><input id="settings-name" value="${escapeHtml(profile.name)}"></div>
+            <div class="field"><label for="settings-name">Name</label><input id="settings-name" value="${escapeHtml(profile.role === "caregiver" ? (profile.caregiverName || profile.name) : (profile.patientName || (profile.role === "patient" ? profile.name : "")))}"></div>
             <div class="field"><label for="settings-role">${t("auth.role")}</label><select id="settings-role"><option value="patient" ${profile.role === "patient" ? "selected" : ""}>${t("auth.patient")}</option><option value="caregiver" ${profile.role === "caregiver" ? "selected" : ""}>${t("auth.caregiver")}</option></select></div>
             <div class="field"><label for="settings-language">${t("settings.language")}</label><select id="settings-language">${languageOptions().map((item) => `<option value="${item.value}" ${profile.language === item.value ? "selected" : ""}>${item.label}</option>`).join("")}</select></div>
             <div class="field"><label for="settings-theme">${t("settings.theme")}</label><select id="settings-theme"><option value="light" ${settings.theme === "light" ? "selected" : ""}>Light</option><option value="dark" ${settings.theme === "dark" ? "selected" : ""}>Dark</option><option value="system" ${settings.theme === "system" ? "selected" : ""}>Use device setting</option></select></div>
@@ -349,9 +358,16 @@ async function handleSettingsAction(target) {
   if (!action) return false;
   if (action === "save-profile") {
     const language = $("#settings-language").value;
+    const newName = $("#settings-name").value.trim().slice(0, 120);
+    const newRole = $("#settings-role").value;
     store.update((data) => {
-      data.profile.name = $("#settings-name").value.trim().slice(0, 120);
-      data.profile.role = $("#settings-role").value;
+      data.profile.name = newName;
+      data.profile.role = newRole;
+      if (newRole === "caregiver") {
+        data.profile.caregiverName = newName;
+      } else {
+        data.profile.patientName = newName;
+      }
       data.profile.language = language;
       data.profile.emergencyContactId = $("#emergency-contact").value;
       data.profile.caregiverMessage = $("#caregiver-message").value.trim().slice(0, 500);
@@ -365,9 +381,11 @@ async function handleSettingsAction(target) {
     renderRoute("settings");
   }
   if (action === "logout") {
+    sync.leave();
     await auth.logout();
     updateProfileUI();
-    renderRoute("settings");
+    toast("Logged out successfully.");
+    renderRoute("home");
   }
   if (action === "notifications") {
     const result = await requestNotificationPermission();
@@ -423,6 +441,12 @@ async function handleGlobalClick(event) {
     await dialogCallbacks[Number(callback.dataset.dialogCallback)]?.();
     return;
   }
+  const routeLink = target.closest("[data-route-link]")?.dataset.routeLink;
+  if (routeLink) {
+    event.preventDefault();
+    navigate(routeLink);
+    return;
+  }
   const routeAction = target.closest("[data-route-action]")?.dataset.routeAction;
   if (routeAction) navigate(routeAction);
   if (target.closest('[data-action="open-emergency"]')) {
@@ -436,6 +460,9 @@ async function handleGlobalClick(event) {
   if (target.closest('[data-action="test-alarm"]')) {
     try {
       await alarms.unlock();
+      if ("Notification" in window && Notification.permission === "default") {
+        requestNotificationPermission().catch(() => {});
+      }
       await alarms.ring({ id: `test-${Date.now()}`, title: "🔔 Test: Medicine Reminder", body: "This is how your medication reminders will sound and look!" });
     } catch (error) {
       toast("Could not play alarm: " + error.message, { type: "error" });
@@ -574,20 +601,107 @@ async function init() {
   }
   registerServiceWorker();
 
-  // Auto-setup notifications for the patient after a short delay so the
-  // first page render has already painted before we show any permission prompt.
-  setTimeout(() => setupPatientNotifications(), 2000);
+  // Initialize alarms and background sound unlock for patient
+  setupPatientNotifications();
+
+  // Initialize real-time sync and caregiver alert listeners
+  setupCaregiverAlertsListener();
 }
 
 /**
- * For the patient role: quietly requests notification permission if not yet
- * granted and auto-starts the alarm ticker so they always receive reminders
- * for medicines, routines, and appointments — without needing to visit Settings.
+ * Connects to Firebase Sync room if linked, listens for emergency alerts from patient,
+ * and sets up real-time caregiver full-screen alarm overlay and push notifications.
+ */
+function setupCaregiverAlertsListener() {
+  sync.reconnect().catch((err) => console.warn("Sync reconnect warning:", err));
+
+  sync.addEventListener("caregiver-alert", (event) => {
+    const alert = event.detail;
+    if (!alert) return;
+
+    // Trigger loud siren beeps, speech TTS and local push notification
+    alarms.ringEmergency(alert).catch(() => {});
+
+    // Render full-screen takeover overlay
+    showCaregiverEmergencyOverlay(alert);
+  });
+
+  sync.addEventListener("remote-update", () => {
+    renderRoute(activeRoute);
+  });
+
+  // Request browser push notification permission if undecided
+  if ("Notification" in window && Notification.permission === "default") {
+    const requestOnce = () => {
+      requestNotificationPermission().catch(() => {});
+      document.removeEventListener("click", requestOnce, true);
+    };
+    document.addEventListener("click", requestOnce, { once: true, capture: true });
+  }
+}
+
+function showCaregiverEmergencyOverlay(alert) {
+  document.getElementById("caregiver-emergency-overlay")?.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "caregiver-emergency-overlay";
+  overlay.className = "caregiver-emergency-overlay";
+  overlay.setAttribute("role", "alertdialog");
+  overlay.setAttribute("aria-modal", "true");
+  overlay.setAttribute("aria-labelledby", "emergency-alert-title");
+
+  const contact = emergencyContact();
+  const mapsUrl = alert.mapsUrl || (alert.location?.lat != null ? `https://www.google.com/maps?q=${alert.location.lat},${alert.location.lng}` : "");
+  const timeStr = alert.createdAt ? formatDate(alert.createdAt, getLanguageMeta().locale, { timeStyle: "short", dateStyle: "short" }) : "Just now";
+
+  overlay.innerHTML = `
+    <div class="caregiver-emergency-card">
+      <div class="emergency-badge-header">
+        <span>🚨</span>
+        <span>URGENT CAREGIVER ALERT</span>
+      </div>
+      <h2 id="emergency-alert-title">${escapeHtml(alert.type === "lost" ? "Patient Is Lost" : (alert.type === "outside-zone" ? "Safety Zone Breach" : "Emergency Assistance Needed"))}</h2>
+      <div class="emergency-patient-name">Patient: <strong>${escapeHtml(alert.patientName || "Patient")}</strong></div>
+      <div class="emergency-message-box">
+        <p><strong>Message:</strong> ${escapeHtml(alert.message || "Immediate assistance requested.")}</p>
+        <p style="margin-top:0.4rem;font-size:0.9rem;color:#6b7280"><small>Received at: ${escapeHtml(timeStr)}</small></p>
+      </div>
+      ${mapsUrl ? `
+        <div class="emergency-location-row">
+          <a class="button button-primary" href="${escapeHtml(mapsUrl)}" target="_blank" rel="noopener" style="width:100%;font-size:1.05rem">
+            📍 Open Live GPS Location in Google Maps
+          </a>
+        </div>
+      ` : ""}
+      <div class="emergency-actions-stack">
+        <button class="button-acknowledge" type="button" id="emergency-dismiss-btn">
+          ✅ Acknowledge & Stop Alarm
+        </button>
+        ${contact?.phone ? `
+          <a class="button button-secondary" href="tel:${escapeHtml(contact.phone)}" style="width:100%">
+            📞 Call Emergency Contact (${escapeHtml(contact.name || contact.phone)})
+          </a>
+        ` : ""}
+      </div>
+    </div>
+  `;
+
+  document.body.append(overlay);
+
+  const dismissBtn = overlay.querySelector("#emergency-dismiss-btn");
+  dismissBtn?.addEventListener("click", () => {
+    alarms.stopSound();
+    sync.acknowledgeAlert(alert.id).catch(() => {});
+    overlay.remove();
+  }, { once: true });
+}
+
+/**
+ * For the patient role: ensures the alarm ticker and audio gesture unlocks are
+ * ready so medicines, routines, and appointments always sound when due.
  */
 async function setupPatientNotifications() {
-  // Only auto-prompt for patients. Caregivers manage this manually via Settings.
   if (store.data.profile.role !== "patient") return;
-  if (!store.data.profile.name) return; // Not set up yet — wait until they sign in.
 
   // Always enable the alarm setting and start the ticker — regardless of AudioContext.
   // Sound will work after the first user interaction (browser requirement).
@@ -608,16 +722,6 @@ async function setupPatientNotifications() {
     };
     document.addEventListener("click", unlockOnce, { once: true, capture: true });
   });
-
-  // Request browser notification permission if we haven't asked yet.
-  if ("Notification" in window && Notification.permission === "default") {
-    const result = await requestNotificationPermission();
-    if (result.state === "granted") {
-      toast("✅ Notifications enabled! You will be reminded about medicines, routines, and appointments.", { duration: 6000 });
-    } else if (result.state === "denied") {
-      toast("⚠️ Notification permission denied. Enable notifications in your browser settings to receive reminders.", { type: "warning", duration: 8000 });
-    }
-  }
 }
 
 init();
@@ -625,3 +729,4 @@ init();
 // Expose for console debugging
 globalThis._memoAlarms = alarms;
 globalThis._memoStore = store;
+globalThis._memoSync = sync;

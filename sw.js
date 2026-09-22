@@ -1,4 +1,4 @@
-const CACHE_VERSION = "memocare-shell-v9";
+const CACHE_VERSION = "memocare-shell-v16";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -32,6 +32,7 @@ const APP_SHELL = [
   "./js/router.js",
   "./js/recognition.js",
   "./js/storage.js",
+  "./js/sync.js",
   "./js/utils.js",
   "./js/voice.js",
   "./locales/en.json",
@@ -74,16 +75,29 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
+  // Network-first with cache fallback
   event.respondWith(
-    caches.match(request).then((cached) => {
-      const update = fetch(request).then((response) => {
+    fetch(request)
+      .then((response) => {
         if (response.ok && response.type === "basic") {
           const copy = response.clone();
           caches.open(CACHE_VERSION).then((cache) => cache.put(request, copy));
         }
         return response;
-      }).catch(() => cached);
-      return cached || update;
+      })
+      .catch(() => caches.match(request))
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ("focus" in client) return client.focus();
+      }
+      if (self.clients.openWindow) return self.clients.openWindow("./index.html");
     })
   );
 });
+

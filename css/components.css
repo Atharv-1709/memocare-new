@@ -4,6 +4,7 @@ html {
   min-height: 100%;
   background: var(--bg);
   scroll-behavior: smooth;
+  overflow-y: auto;
 }
 
 body {
@@ -11,7 +12,7 @@ body {
   min-width: 320px;
   min-height: 100svh;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: visible;
   background:
     radial-gradient(circle at 12% 7%, rgba(71, 171, 255, 0.22), transparent 34rem),
     radial-gradient(circle at 90% 12%, rgba(156, 137, 255, 0.2), transparent 30rem),
@@ -135,21 +136,27 @@ audio { width: 100%; max-width: 32rem; }
 .app-column {
   min-width: 0;
   min-height: 100svh;
-  margin-inline-start: calc(var(--sidebar) + 54px);
+  margin-inline-start: calc(var(--sidebar) + 36px);
+  padding: 0 1.5rem 6rem;
 }
 
 .topbar {
   position: sticky;
-  inset-block-start: 18px;
+  inset-block-start: 14px;
   z-index: 40;
   display: flex;
   max-width: var(--content);
-  min-height: 76px;
+  min-height: 72px;
   align-items: center;
   justify-content: space-between;
-  margin: 18px auto 0;
-  padding: 0.8rem 1rem 0.8rem 1.3rem;
+  margin: 14px auto 1.5rem;
+  padding: 0.8rem 1.25rem;
   border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-strong) 94%, var(--bg));
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.06);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
 }
 .topbar-title { margin: 0; font-family: var(--font-display); font-size: clamp(1.4rem, 2vw, 1.8rem); }
 .topbar-actions { display: flex; align-items: center; gap: 0.5rem; }
@@ -374,3 +381,112 @@ audio { width: 100%; max-width: 32rem; }
   .dialog-header { padding: 0.9rem 1rem; }
   .dialog-body { padding: 1rem; padding-bottom: calc(1.25rem + env(safe-area-inset-bottom)); }
 }
+
+/* ── Real-Time Caregiver Emergency Overlay ──────────────────────────────── */
+.caregiver-emergency-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background-color: rgba(160, 10, 10, 0.94);
+  animation: emergency-bg-strobe 1s ease-in-out infinite alternate;
+  backdrop-filter: blur(8px);
+}
+
+@keyframes emergency-bg-strobe {
+  0% { background-color: rgba(180, 15, 15, 0.95); }
+  100% { background-color: rgba(70, 0, 0, 0.97); }
+}
+
+.caregiver-emergency-card {
+  width: 100%;
+  max-width: 540px;
+  background: #ffffff;
+  color: #1a1a1a;
+  border-radius: 24px;
+  padding: 2rem 1.75rem;
+  border: 4px solid #d32f2f;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), 0 0 40px rgba(255, 60, 60, 0.8);
+  animation: emergency-card-bounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  text-align: center;
+}
+
+@keyframes emergency-card-bounce {
+  0% { transform: scale(0.75); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.emergency-badge-header {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #ffebee;
+  color: #c62828;
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  margin-bottom: 1rem;
+  border: 1px solid rgba(211, 47, 47, 0.25);
+}
+
+.caregiver-emergency-card h2 {
+  font-size: 1.85rem;
+  color: #b71c1c;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.2;
+}
+
+.caregiver-emergency-card .emergency-patient-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #212121;
+  margin-bottom: 0.75rem;
+}
+
+.caregiver-emergency-card .emergency-message-box {
+  background: #fdf2f2;
+  border: 1px solid #ffcdd2;
+  border-radius: 14px;
+  padding: 1rem;
+  margin: 1rem 0 1.25rem 0;
+  font-size: 1.05rem;
+  line-height: 1.45;
+  color: #374151;
+  text-align: left;
+}
+
+.caregiver-emergency-card .emergency-location-row {
+  margin: 1rem 0;
+}
+
+.caregiver-emergency-card .emergency-actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.caregiver-emergency-card .button-acknowledge {
+  background: #d32f2f;
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 700;
+  padding: 0.9rem 1.5rem;
+  border-radius: 14px;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(211, 47, 47, 0.4);
+  transition: transform 0.15s, background 0.15s;
+}
+
+.caregiver-emergency-card .button-acknowledge:hover {
+  background: #b71c1c;
+  transform: translateY(-2px);
+}
+

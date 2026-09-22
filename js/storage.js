@@ -8,6 +8,8 @@ const defaultData = () => ({
   profile: {
     id: "guest",
     name: "",
+    patientName: "",
+    caregiverName: "",
     role: "patient",
     language: "en",
     linkedRoomId: "",
@@ -236,8 +238,11 @@ export function validateData(input) {
     ...base.profile,
     id: string(profile.id, base.profile.id, 100),
     name: string(profile.name, "", 120),
+    patientName: string(profile.patientName, "", 120),
+    caregiverName: string(profile.caregiverName, "", 120),
     role: ["patient", "caregiver"].includes(profile.role) ? profile.role : "patient",
     language: ["en", "hi", "ur"].includes(profile.language) ? profile.language : "en",
+    linkedRoomId: string(profile.linkedRoomId, "", 100),
     emergencyContactId: string(profile.emergencyContactId, "", 100),
     caregiverMessage: string(profile.caregiverMessage, "", 500),
     authMode: ["guest", "firebase"].includes(profile.authMode) ? profile.authMode : "guest"

@@ -33,8 +33,14 @@ class AuthService extends EventTarget {
         this.user = user;
         if (user) {
           store.update((data) => {
+            const displayName = user.displayName || data.profile.name || user.email?.split("@")[0] || "";
             data.profile.id = user.uid;
-            data.profile.name = user.displayName || data.profile.name || user.email?.split("@")[0] || "";
+            data.profile.name = displayName;
+            if (data.profile.role === "caregiver") {
+              data.profile.caregiverName ||= displayName;
+            } else {
+              data.profile.patientName ||= displayName;
+            }
             data.profile.authMode = "firebase";
           });
         }
@@ -63,9 +69,17 @@ class AuthService extends EventTarget {
   }
 
   continueAsGuest(profile = {}) {
+    const role = ["patient", "caregiver"].includes(profile.role) ? profile.role : "patient";
+    const rawName = String(profile.name || "").trim().slice(0, 120);
     store.update((data) => {
-      data.profile.name = String(profile.name || data.profile.name || "Guest").slice(0, 120);
-      data.profile.role = ["patient", "caregiver"].includes(profile.role) ? profile.role : "patient";
+      data.profile.role = role;
+      if (role === "caregiver") {
+        data.profile.caregiverName = rawName || data.profile.caregiverName || "Guest Caregiver";
+        data.profile.name = data.profile.caregiverName;
+      } else {
+        data.profile.patientName = rawName || data.profile.patientName || "";
+        data.profile.name = data.profile.patientName || "Guest";
+      }
       data.profile.language = ["en", "hi", "ur"].includes(profile.language) ? profile.language : "en";
       data.profile.authMode = "guest";
     });
@@ -83,6 +97,11 @@ class AuthService extends EventTarget {
     store.update((data) => {
       data.profile.name = name;
       data.profile.role = role;
+      if (role === "caregiver") {
+        data.profile.caregiverName = name;
+      } else {
+        data.profile.patientName = name;
+      }
       data.profile.language = language;
       data.profile.id = credential.user.uid;
       data.profile.authMode = "firebase";
@@ -123,6 +142,11 @@ class AuthService extends EventTarget {
     this.user = null;
     store.update((data) => {
       data.profile.id = "guest";
+      data.profile.name = "";
+      data.profile.caregiverName = "";
+      data.profile.patientName = "";
+      data.profile.role = "patient";
+      data.profile.linkedRoomId = "";
       data.profile.authMode = "guest";
     });
     this.emit();
@@ -133,11 +157,14 @@ export const auth = new AuthService();
 
 function profileFields(role = store.data.profile.role) {
   const emergency = store.data.people.find((person) => person.id === store.data.profile.emergencyContactId);
+  const initialName = role === "caregiver"
+    ? (store.data.profile.caregiverName || (store.data.profile.role === "caregiver" ? store.data.profile.name : ""))
+    : (store.data.profile.patientName || (store.data.profile.role === "patient" ? store.data.profile.name : ""));
   return `
     <div class="form-grid">
       <div class="field">
         <label for="guest-name">${t("common.name")}</label>
-        <input id="guest-name" name="name" autocomplete="name" maxlength="120" value="${escapeHtml(store.data.profile.name)}" required>
+        <input id="guest-name" name="name" autocomplete="name" maxlength="120" value="${escapeHtml(initialName)}" required>
       </div>
       <div class="field">
         <label for="guest-role">${t("auth.role")}</label>

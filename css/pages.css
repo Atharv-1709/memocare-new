@@ -1,7 +1,8 @@
 #main-content {
-  width: min(calc(100% - 2rem), var(--content));
-  min-height: calc(100svh - 120px);
-  margin: 1.2rem auto 7rem;
+  width: 100%;
+  max-width: var(--content);
+  margin: 0 auto;
+  padding-bottom: 4rem;
   overflow: visible;
 }
 
@@ -78,10 +79,28 @@
 #safe-map.leaflet-container { z-index: 0; background: #dce8ef; }
 .map-state { display: grid; min-height: 440px; place-items: center; padding: 2rem; text-align: center; }
 
-.emergency-layout { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 1rem; }
-.emergency-primary { border: 2px solid color-mix(in srgb, var(--danger) 45%, transparent); background: linear-gradient(145deg, color-mix(in srgb, var(--danger) 10%, var(--surface-strong)), var(--surface)); }
-.emergency-call-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
-.medical-card { border: 2px solid var(--border); background: var(--surface-strong); }
+.emergency-layout { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; align-items: stretch; }
+.emergency-primary { display: flex; flex-direction: column; justify-content: flex-start; border: 2px solid color-mix(in srgb, var(--danger) 45%, transparent); background: linear-gradient(145deg, color-mix(in srgb, var(--danger) 10%, var(--surface-strong)), var(--surface)); padding: 1.75rem; border-radius: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); }
+.emergency-primary h3 { margin-top: 0; margin-bottom: 0.5rem; font-size: 1.35rem; }
+.emergency-call-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; margin-block: 0.75rem 1.25rem; }
+.emergency-call-grid .button,
+.emergency-call-grid a.button {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: clamp(0.92rem, 1.4vw, 1.05rem);
+  font-weight: 750;
+  padding: 0.85rem 0.75rem;
+  line-height: 1.25;
+  white-space: normal;
+  word-break: normal;
+  border-radius: 16px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+}
+.medical-card { display: flex; flex-direction: column; justify-content: flex-start; gap: 0.85rem; border: 2px solid var(--border); background: var(--surface-strong); padding: 1.75rem; border-radius: 24px; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04); }
+.medical-card h3 { margin-top: 0; margin-bottom: 0.5rem; font-size: 1.35rem; }
 
 .dispenser-status { display: flex; align-items: center; gap: 1rem; }
 .device-orb { width: 72px; height: 72px; border: 8px solid color-mix(in srgb, var(--primary) 24%, transparent); border-radius: 50%; background: var(--surface-strong); box-shadow: inset 0 0 0 1px var(--border); }
@@ -148,14 +167,14 @@
 
 @media (max-width: 900px) {
   .span-8, .span-7, .span-6, .span-5, .span-4 { grid-column: span 12; }
-  .person-grid, .memory-grid, .routine-grid, .safe-place-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .emergency-layout { grid-template-columns: 1fr; }
+  .person-grid, .memory-grid, .routine-grid, .safe-place-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .game-grid { grid-template-columns: 1fr; }
   .game-panel:last-child { grid-column: auto; }
 }
 
 @media (max-width: 640px) {
-  #main-content { width: calc(100% - 1rem); margin-top: 0.75rem; }
+  #main-content { width: calc(100% - 1rem); margin-top: 0.75rem; padding-bottom: 5rem; }
   .page-intro { align-items: stretch; flex-direction: column; }
   .page-actions .button { flex: 1; }
   .summary-row { grid-template-columns: repeat(2, 1fr); }
@@ -166,7 +185,6 @@
   .data-row { align-items: stretch; flex-direction: column; }
   .row-actions { justify-content: stretch; }
   .row-actions .button { flex: 1; }
-  .emergency-call-grid { grid-template-columns: 1fr; }
   .manual-controls { grid-template-columns: repeat(2, 1fr); }
   .simple-action-grid { grid-template-columns: 1fr; }
   .simple-action { min-height: 120px; }
@@ -176,4 +194,8 @@
   .recognized-person .person-avatar { margin-inline: auto; }
   #safe-map { height: min(62vh, 520px); min-height: 360px; }
   .map-shell, .map-state { min-height: 360px; }
+}
+
+@media (max-width: 480px) {
+  .emergency-call-grid { grid-template-columns: 1fr; }
 }

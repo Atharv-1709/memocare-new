@@ -17,7 +17,7 @@ export function aiPage() {
       <div class="dashboard-grid">
         <article class="card span-8 ai-chat-card">
           <div id="ai-messages" class="ai-messages" role="log" aria-live="polite">
-            <div class="ai-message ai-assistant"><strong>MemoCare AI</strong><p>Hello ${escapeHtml(store.data.profile.name || "there")}. What would you like help understanding?</p></div>
+            <div class="ai-message ai-assistant"><strong>MemoCare AI</strong><p>Hello ${escapeHtml(store.data.profile.patientName || (store.data.profile.role === "patient" ? store.data.profile.name : "") || "there")}. What would you like help understanding?</p></div>
           </div>
           <form id="ai-form" class="ai-composer">
             <label class="field-label" for="ai-prompt">Your question</label>

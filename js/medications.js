@@ -227,6 +227,7 @@ export function adherenceSummary(days = 7) {
 
 export function medicationCard(medication, { timeline = false } = {}) {
   const status = doseStatus(medication.id);
+  const isCaregiver = store.data.profile.role === "caregiver";
   return `
     <article class="${timeline ? "timeline-item" : "card medication-card"}" style="--pill-color:${escapeHtml(medication.color)}" data-medication-id="${medication.id}">
       ${!timeline && medication.photo ? `<img src="${escapeHtml(medication.photo)}" alt="" class="medication-photo">` : ""}
@@ -247,7 +248,7 @@ export function medicationCard(medication, { timeline = false } = {}) {
           <button class="button button-small button-success" type="button" data-dose-status="taken" data-medication-id="${medication.id}">${t("med.taken")}</button>
           <button class="button button-small button-secondary" type="button" data-dose-status="postponed" data-medication-id="${medication.id}">${t("med.later")}</button>
           <button class="button button-small button-ghost" type="button" data-dose-status="skipped" data-medication-id="${medication.id}">${t("med.skip")}</button>
-        ` : (store.data.profile.role !== "patient" ? `
+        ` : (isCaregiver ? `
           <button class="button button-small button-secondary" type="button" data-med-action="edit" data-medication-id="${medication.id}">${t("common.edit")}</button>
           <button class="button button-small button-ghost" type="button" data-med-action="delete" data-medication-id="${medication.id}">${t("common.delete")}</button>
         ` : "")}
@@ -260,22 +261,22 @@ export function medicationCard(medication, { timeline = false } = {}) {
 
 export function medicationPage() {
   const summary = adherenceSummary();
-  const isPatient = store.data.profile.role === "patient";
+  const isCaregiver = store.data.profile.role === "caregiver";
   return `
     <section class="page-section">
       <div class="page-intro">
         <div><p class="eyebrow">Medication safety</p><h2>${t("medications.title")}</h2><p>Keep the schedule exactly as prescribed. MemoCare never changes a dose.</p></div>
-        ${!isPatient ? `<div class="page-actions"><button class="button button-primary" type="button" data-med-action="add">${t("medications.add")}</button></div>` : ""}
+        ${isCaregiver ? `<div class="page-actions"><button class="button button-primary" type="button" data-med-action="add">${t("medications.add")}</button></div>` : ""}
       </div>
       <div class="banner banner-warning"><strong>Medical disclaimer</strong><br>${t("medical.disclaimer")}</div>
-      ${isPatient ? '<div class="banner"><strong>View only</strong><br>Your caregiver manages your medication list.</div>' : ""}
+      ${!isCaregiver ? '<div class="banner"><strong>View only</strong><br>Your caregiver manages your medication list.</div>' : ""}
       <div class="summary-row">
         <div class="summary-item"><strong>${store.data.medications.length}</strong><span>medications</span></div>
         <div class="summary-item"><strong>${summary.rate}%</strong><span>7-day recorded adherence</span></div>
         <div class="summary-item"><strong>${store.data.doseHistory.filter((item) => item.status === "missed").length}</strong><span>recorded missed</span></div>
       </div>
       <div class="data-list">
-        ${store.data.medications.length ? store.data.medications.map((item) => medicationCard(item)).join("") : `<div class="empty-state"><div><div class="empty-icon">✚</div><p>${t("medications.empty")}</p>${!isPatient ? `<button class="button button-primary" type="button" data-med-action="add">${t("medications.add")}</button>` : ""}</div></div>`}
+        ${store.data.medications.length ? store.data.medications.map((item) => medicationCard(item)).join("") : `<div class="empty-state"><div><div class="empty-icon">✚</div><p>${t("medications.empty")}</p>${isCaregiver ? `<button class="button button-primary" type="button" data-med-action="add">${t("medications.add")}</button>` : ""}</div></div>`}
       </div>
     </section>
   `;

@@ -13,16 +13,25 @@ export const routes = [
   { id: "settings", icon: "⚙", titleKey: "nav.settings" }
 ];
 
+let _routerCallback = null;
+
 export function currentRoute() {
   const id = location.hash.replace(/^#\/?/, "").split("?")[0];
   return routes.some((route) => route.id === id) ? id : "home";
 }
 
 export function navigate(id) {
-  location.hash = `#${routes.some((route) => route.id === id) ? id : "home"}`;
+  const targetId = routes.some((route) => route.id === id) ? id : "home";
+  const targetHash = `#${targetId}`;
+  if (location.hash === targetHash) {
+    _routerCallback?.(targetId);
+  } else {
+    location.hash = targetHash;
+  }
 }
 
 export function setupRouter(onRoute) {
+  _routerCallback = onRoute;
   const run = () => onRoute(currentRoute());
   addEventListener("hashchange", run);
   if (!location.hash) history.replaceState(null, "", "#home");

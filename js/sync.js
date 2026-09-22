@@ -35,6 +35,8 @@ class SyncService extends EventTarget {
     this.api = null;
     this.roomId = null;
     this.unsubscribe = null;
+    this.alertsUnsubscribe = null;
+    this._seenAlertIds = new Set();
     this.status = "idle"; // idle | connecting | connected | error | no-config
     this._remoteUpdateCallback = null;
     this._ignoreNextSnapshot = false;
@@ -83,11 +85,13 @@ class SyncService extends EventTarget {
     const roomId = generateRoomId();
     const ref = this.api.doc(this.db, "careRooms", roomId);
     const role = store.data.profile.role;
+    const patientName = store.data.profile.patientName || (role === "patient" ? store.data.profile.name : "");
+    const caregiverName = store.data.profile.caregiverName || (role === "caregiver" ? store.data.profile.name : "");
     await this.api.setDoc(ref, {
       roomId,
       createdAt: new Date().toISOString(),
-      patientName: role === "patient" ? (store.data.profile.name || "Patient") : "",
-      caregiverName: role === "caregiver" ? (store.data.profile.name || "Caregiver") : "",
+      patientName: patientName || (role === "patient" ? "Patient" : ""),
+      caregiverName: caregiverName || (role === "caregiver" ? "Caregiver" : ""),
       medications: store.data.medications,
       doseHistory: store.data.doseHistory.slice(-100),
       appointments: store.data.appointments,
@@ -117,8 +121,9 @@ class SyncService extends EventTarget {
 
     // Update name fields for this role
     const role = store.data.profile.role;
+    const myName = (role === "caregiver" ? store.data.profile.caregiverName : store.data.profile.patientName) || store.data.profile.name || role;
     await this.api.updateDoc(ref, {
-      [`${role}Name`]: store.data.profile.name || role
+      [`${role}Name`]: myName
     });
 
     store.update((data) => { data.profile.linkedRoomId = clean; });
@@ -174,8 +179,91 @@ class SyncService extends EventTarget {
       this._emit();
     });
 
+    // Also subscribe to alerts subcollection in this room
+    this._subscribeAlerts(roomId);
+
     this.status = "connected";
     this._emit();
+  }
+
+  _subscribeAlerts(roomId) {
+    if (this.alertsUnsubscribe) {
+      this.alertsUnsubscribe();
+      this.alertsUnsubscribe = null;
+    }
+
+    try {
+      const alertsCol = this.api.collection(this.db, "careRooms", roomId, "alerts");
+      this.alertsUnsubscribe = this.api.onSnapshot(alertsCol, (snapshot) => {
+        snapshot.docChanges().forEach((change) => {
+          if (change.type === "added" || change.type === "modified") {
+            const data = change.doc.data();
+            const alertId = change.doc.id;
+            if (!data.acknowledged && !this._seenAlertIds.has(alertId)) {
+              this._seenAlertIds.add(alertId);
+              // Dispatch event for caregivers to react
+              const alert = { id: alertId, ...data };
+              this.dispatchEvent(new CustomEvent("caregiver-alert", { detail: alert }));
+            }
+          }
+        });
+      }, (err) => {
+        console.warn("Alerts listener error:", err);
+      });
+    } catch (err) {
+      console.warn("Could not subscribe to alerts subcollection:", err);
+    }
+  }
+
+  /**
+   * Send an emergency alert to Firestore careRooms/{roomId}/alerts
+   */
+  async sendAlert(alertData) {
+    const ready = await this._init();
+    const roomId = this.roomId || store.data.profile.linkedRoomId;
+    if (!ready || !roomId) {
+      throw new Error("Cannot send alert: Firebase room is not linked.");
+    }
+
+    const patientName = alertData.patientName || store.data.profile.patientName || (store.data.profile.role === "patient" ? store.data.profile.name : "") || "Patient";
+    const loc = alertData.location;
+    const mapsUrl = loc && Number.isFinite(loc.lat) && Number.isFinite(loc.lng)
+      ? `https://www.google.com/maps?q=${loc.lat},${loc.lng}`
+      : "";
+
+    const payload = {
+      type: alertData.type || "emergency",
+      patientName,
+      message: alertData.message || `EMERGENCY: ${patientName} needs help!`,
+      location: loc ? { lat: loc.lat, lng: loc.lng, accuracy: loc.accuracy || null } : null,
+      mapsUrl,
+      createdAt: new Date().toISOString(),
+      acknowledged: false,
+      acknowledgedAt: null
+    };
+
+    const alertsCol = this.api.collection(this.db, "careRooms", roomId, "alerts");
+    const docRef = await this.api.addDoc(alertsCol, payload);
+    return docRef.id;
+  }
+
+  /**
+   * Mark an emergency alert as acknowledged in Firestore
+   */
+  async acknowledgeAlert(alertId) {
+    const ready = await this._init();
+    const roomId = this.roomId || store.data.profile.linkedRoomId;
+    if (!ready || !roomId || !alertId) return;
+
+    try {
+      const alertRef = this.api.doc(this.db, "careRooms", roomId, "alerts", alertId);
+      await this.api.updateDoc(alertRef, {
+        acknowledged: true,
+        acknowledgedAt: new Date().toISOString()
+      });
+    } catch (err) {
+      console.error("Failed to acknowledge alert:", err);
+    }
   }
 
   _applyRemoteData(roomData) {
@@ -184,6 +272,12 @@ class SyncService extends EventTarget {
         if (Array.isArray(roomData[field])) {
           data[field] = roomData[field];
         }
+      }
+      if (roomData.patientName && typeof roomData.patientName === "string") {
+        data.profile.patientName = roomData.patientName;
+      }
+      if (roomData.caregiverName && typeof roomData.caregiverName === "string") {
+        data.profile.caregiverName = roomData.caregiverName;
       }
     });
   }
@@ -194,6 +288,7 @@ class SyncService extends EventTarget {
   async push() {
     if (!this.linked || !this.db) return;
     const role = store.data.profile.role;
+    const myName = (role === "caregiver" ? store.data.profile.caregiverName : store.data.profile.patientName) || store.data.profile.name || role;
     const ref = this.api.doc(this.db, "careRooms", this.roomId);
     this._ignoreNextSnapshot = true;
     try {
@@ -204,7 +299,7 @@ class SyncService extends EventTarget {
         reminders: store.data.reminders,
         lastUpdatedBy: role,
         lastUpdatedAt: new Date().toISOString(),
-        [`${role}Name`]: store.data.profile.name || role
+        [`${role}Name`]: myName
       });
     } catch (err) {
       this._ignoreNextSnapshot = false;
@@ -220,6 +315,11 @@ class SyncService extends EventTarget {
       this.unsubscribe();
       this.unsubscribe = null;
     }
+    if (this.alertsUnsubscribe) {
+      this.alertsUnsubscribe();
+      this.alertsUnsubscribe = null;
+    }
+    this._seenAlertIds.clear();
     this.roomId = null;
     this.status = "idle";
     store.update((data) => { data.profile.linkedRoomId = ""; });

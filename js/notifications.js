@@ -35,12 +35,35 @@ export async function requestNotificationPermission() {
   return { state: result };
 }
 
-export function showLocalNotification(title, options = {}) {
+export async function showLocalNotification(title, options = {}) {
   if (!("Notification" in window) || Notification.permission !== "granted") return false;
-  new Notification(title, {
+  const payload = {
     icon: "./icons/icon-192.png",
     badge: "./icons/icon-192.png",
+    vibrate: [400, 150, 400, 150, 400],
     ...options
-  });
-  return true;
+  };
+
+  try {
+    if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+      const registration = await navigator.serviceWorker.ready;
+      if (registration?.showNotification) {
+        await registration.showNotification(title, payload);
+        return true;
+      }
+    }
+  } catch {
+    // Fall back to window Notification
+  }
+
+  try {
+    const notif = new Notification(title, payload);
+    notif.onclick = () => {
+      window.focus?.();
+      notif.close();
+    };
+    return true;
+  } catch {
+    return false;
+  }
 }

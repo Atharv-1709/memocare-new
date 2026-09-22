@@ -162,7 +162,7 @@ export function bindPersonFormEvents(dialogElement) {
 
 
 function personCard(person) {
-  const isPatient = store.data.profile.role === "patient";
+  const isCaregiver = store.data.profile.role === "caregiver";
   return `
     <article class="card person-card">
       <div class="person-avatar">${person.photo ? `<img src="${escapeHtml(person.photo)}" alt="">` : escapeHtml(initials(person.name))}</div>
@@ -173,7 +173,7 @@ function personCard(person) {
       <div class="row-actions">
         ${person.phone ? `<a class="button button-primary button-small" href="tel:${escapeHtml(person.phone)}">Call</a>` : ""}
         <button class="button button-secondary button-small" type="button" data-read-text="${escapeHtml(`${person.name}. ${person.relationship}. ${person.identification}. ${person.memories}`)}">Read aloud</button>
-        ${!isPatient ? `
+        ${isCaregiver ? `
           <button class="button button-secondary button-small" type="button" data-person-action="edit" data-person-id="${person.id}">Edit</button>
           <button class="button button-ghost button-small" type="button" data-person-action="delete" data-person-id="${person.id}">Delete</button>
         ` : ""}
@@ -184,15 +184,15 @@ function personCard(person) {
 
 
 export function peoplePage() {
-  const isPatient = store.data.profile.role === "patient";
+  const isCaregiver = store.data.profile.role === "caregiver";
   return `
     <section class="page-section">
       <div class="page-intro">
         <div><p class="eyebrow">Family and familiar faces</p><h2>${t("people.title")}</h2><p>Important people, family members, and caregivers.</p></div>
-        ${!isPatient ? `<div class="page-actions"><button class="button button-primary" type="button" data-person-action="add">Add family member</button><a class="button button-secondary" href="#recognition">Open face recognition</a></div>` : ""}
+        ${isCaregiver ? `<div class="page-actions"><button class="button button-primary" type="button" data-person-action="add">Add family member</button><a class="button button-secondary" href="#recognition">Open face recognition</a></div>` : ""}
       </div>
-      ${isPatient ? '<div class="banner"><strong>View only</strong><br>Your caregiver manages family members and contacts.</div>' : ""}
-      <div class="person-grid">${store.data.people.length ? store.data.people.map(personCard).join("") : `<div class="empty-state"><div><p>No family members have been added.</p>${!isPatient ? '<button class="button button-primary" type="button" data-person-action="add">Add your first family member</button>' : ""}</div></div>`}</div>
+      ${!isCaregiver ? '<div class="banner"><strong>View only</strong><br>Your caregiver manages family members and contacts.</div>' : ""}
+      <div class="person-grid">${store.data.people.length ? store.data.people.map(personCard).join("") : `<div class="empty-state"><div><p>No family members have been added.</p>${isCaregiver ? '<button class="button button-primary" type="button" data-person-action="add">Add your first family member</button>' : ""}</div></div>`}</div>
     </section>
   `;
 }
@@ -278,11 +278,12 @@ function planForm(item = {}, type = "appointment") {
 }
 
 function planRows(items, type) {
+  const isCaregiver = store.data.profile.role === "caregiver";
   return items.length
     ? items.map((item) => `
       <div class="data-row">
         <div><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.date)} · ${escapeHtml(item.time)}${item.notes ? ` · ${escapeHtml(item.notes)}` : ""}</p></div>
-        ${store.data.profile.role !== "patient" ? `
+        ${isCaregiver ? `
         <div class="row-actions">
           <button class="button button-secondary button-small" type="button" data-plan-action="edit" data-plan-type="${type}" data-plan-id="${item.id}">Edit</button>
           <button class="button button-ghost button-small" type="button" data-plan-action="delete" data-plan-type="${type}" data-plan-id="${item.id}">Delete</button>
@@ -294,7 +295,7 @@ function planRows(items, type) {
 }
 
 function routineCard(routine) {
-  const isPatient = store.data.profile.role === "patient";
+  const isCaregiver = store.data.profile.role === "caregiver";
   return `
     <article class="card">
       ${routine.photo ? `<img src="${escapeHtml(routine.photo)}" alt="" style="width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:14px">` : ""}
@@ -303,7 +304,7 @@ function routineCard(routine) {
       <p>${Array.isArray(routine.steps) ? routine.steps.length : 1} step(s)</p>
       <div class="row-actions">
         <button class="button button-primary button-small" type="button" data-routine-action="start" data-routine-id="${routine.id}">Start guide</button>
-        ${!isPatient ? `
+        ${isCaregiver ? `
           <button class="button button-secondary button-small" type="button" data-routine-action="edit" data-routine-id="${routine.id}">Edit</button>
           <button class="button button-ghost button-small" type="button" data-routine-action="delete" data-routine-id="${routine.id}">Delete</button>
         ` : ""}
@@ -316,12 +317,13 @@ function routineCard(routine) {
 
 export function todayPage() {
   const routines = store.data.routines;
+  const isCaregiver = store.data.profile.role === "caregiver";
   const isPatient = store.data.profile.role === "patient";
   return `
     <section class="page-section">
       <div class="page-intro">
         <div><p class="eyebrow">${formatDate(new Date(), getLanguageMeta().locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p><h2>${t("today.title")}</h2><p>${escapeHtml(store.data.profile.caregiverMessage || "Take your time. One step at a time.")}</p></div>
-        ${!isPatient ? `<div class="page-actions"><button class="button button-primary" type="button" data-routine-action="add">Add routine</button><button class="button button-secondary" type="button" data-plan-action="add" data-plan-type="appointment">Add appointment</button><button class="button button-secondary" type="button" data-plan-action="add" data-plan-type="reminder">Add reminder</button></div>` : ""}
+        ${isCaregiver ? `<div class="page-actions"><button class="button button-primary" type="button" data-routine-action="add">Add routine</button><button class="button button-secondary" type="button" data-plan-action="add" data-plan-type="appointment">Add appointment</button><button class="button button-secondary" type="button" data-plan-action="add" data-plan-type="reminder">Add reminder</button></div>` : ""}
       </div>
       <div class="dashboard-grid">
         <article class="card span-12"><div class="card-header"><div><h3>Today’s plan</h3><p class="card-subtitle">Guided routines with large steps.</p></div><a href="./routine.html">Classic routines</a></div><div class="routine-grid">${routines.length ? routines.map(routineCard).join("") : `<div class="empty-state"><p>${isPatient ? "No routines are scheduled for today." : "Add a routine such as taking medicine or locking the door."}</p></div>`}</div></article>
@@ -353,10 +355,10 @@ export function emergencyPage() {
         </article>
         <article class="card medical-card">
           <h3>Medical information card</h3>
-          <p><strong>Name:</strong> ${escapeHtml(store.data.profile.name || "Not set")}</p>
+          <p><strong>Name:</strong> ${escapeHtml(store.data.profile.patientName || (store.data.profile.role === "patient" ? store.data.profile.name : "") || "Not set")}</p>
           <p><strong>Emergency contact:</strong> ${escapeHtml(emergencyPerson ? `${emergencyPerson.name} · ${emergencyPerson.phone}` : "Not set")}</p>
           <p><strong>Current medicines:</strong> ${escapeHtml(store.data.medications.map((item) => `${item.name} ${item.dosage}`).join(", ") || "None saved")}</p>
-          <button class="button button-secondary" type="button" data-read-text="My name is ${escapeHtml(store.data.profile.name || "not set")}. My emergency contact is ${escapeHtml(emergencyPerson?.name || "not set")}.">${t("common.readAloud")}</button>
+          <button class="button button-secondary" type="button" data-read-text="My name is ${escapeHtml(store.data.profile.patientName || (store.data.profile.role === "patient" ? store.data.profile.name : "") || "not set")}. My emergency contact is ${escapeHtml(emergencyPerson?.name || "not set")}.">${t("common.readAloud")}</button>
         </article>
       </div>
       <article class="card" id="lost-panel" hidden>
@@ -370,6 +372,7 @@ export function emergencyPage() {
           ${emergencyPerson?.phone ? `<a class="button button-danger" href="tel:${escapeHtml(emergencyPerson.phone)}">Call caregiver</a>` : ""}
         </div>
       </article>
+      ${syncLinkCardMarkup("patient")}
     </section>
   `;
 }
@@ -386,11 +389,12 @@ export function caregiverPage() {
   const syncStatusPill = syncLinked
     ? 'status-success'
     : (syncStatus === 'connecting' ? 'status-warning' : 'status-info');
+  const patientLabel = store.data.profile.patientName ? ` for <strong>${escapeHtml(store.data.profile.patientName)}</strong>` : "";
   return `
     <section class="page-section">
       <div class="page-intro"><div><p class="eyebrow">Privacy-conscious summary</p><h2>${t("caregiver.title")}</h2><p>The patient controls each visible category. Use the room link below to sync with the patient's device.</p></div></div>
       ${syncLinked
-        ? `<div class="banner banner-success"><strong>&#128279; Live link active</strong><br>Syncing with room <code>${escapeHtml(roomId)}</code>. Medications and dose history are shared in real time.</div>`
+        ? `<div class="banner banner-success"><strong>&#128279; Live link active${patientLabel}</strong><br>Syncing with room <code>${escapeHtml(roomId)}</code>. Medications and dose history are shared in real time.</div>`
         : `<div class="banner banner-warning"><strong>Not linked to a patient</strong><br>${sync.configured ? 'Generate a room code and share it with the patient to begin real-time sync.' : 'Add your Firebase config to <code>config/auth-config.js</code> to enable real-time linking.'}</div>`
       }
       <div class="summary-row">
@@ -419,39 +423,10 @@ export function caregiverPage() {
           </div>
           <p><strong>Safe-place status:</strong> ${permissions.location ? (store.data.settings.continuousLocation ? "Location sharing enabled while Safe Places is open" : "Location visible but continuous sharing is off") : "Hidden by patient preference"}</p>
         </article>
-        <article class="card span-12" id="caregiver-link-card">
-          <div class="card-header"><div><h3>&#128279; Link to Patient</h3><p class="card-subtitle">Both devices must use the same room code.</p></div><span class="status-pill ${syncStatusPill}">${escapeHtml(sync.statusLabel())}</span></div>
-          ${sync.configured ? `
-            ${syncLinked ? `
-              <div class="form-grid">
-                <div class="field field-full">
-                  <label>Your room code</label>
-                  <div style="display:flex;gap:.5rem;align-items:center">
-                    <input id="sync-room-display" type="text" value="${escapeHtml(roomId)}" readonly style="font-family:monospace;font-size:1.2rem;letter-spacing:.2em;max-width:10rem">
-                    <button class="button button-secondary button-small" type="button" data-sync-action="copy-code">Copy</button>
-                  </div>
-                  <small>Share this code with the patient. They enter it in their app to connect.</small>
-                </div>
-              </div>
-              <div class="row-actions">
-                <button class="button button-ghost" type="button" data-sync-action="leave">Disconnect room</button>
-              </div>
-            ` : `
-              <div class="form-grid">
-                <div class="field">
-                  <label for="sync-join-input">Enter existing room code</label>
-                  <input id="sync-join-input" type="text" maxlength="6" placeholder="ABC123" style="text-transform:uppercase;letter-spacing:.15em;font-family:monospace">
-                </div>
-              </div>
-              <div class="row-actions">
-                <button class="button button-primary" type="button" data-sync-action="create">Generate new room code</button>
-                <button class="button button-secondary" type="button" data-sync-action="join">Join existing room</button>
-              </div>
-            `}
-          ` : `
-            <p>Firebase is not configured. Follow the setup guide in <code>config/auth-config.js</code> to enable real-time linking.</p>
-          `}
-              <article class="card span-12">
+      </div>
+      ${syncLinkCardMarkup("caregiver")}
+      <div class="dashboard-grid" style="margin-top:1.5rem">
+        <article class="card span-12">
           <div class="card-header"><div><h3>Caregiver alert preferences</h3><p class="card-subtitle">Saved preferences only. Delivery requires an authorized notification backend and confirmation receipt.</p></div></div>
           <div class="form-grid">
             <div class="field"><label>Missed-dose grace period (minutes)</label><input type="number" min="5" max="1440" value="${alerts.missedGraceMinutes}" data-caregiver-alert="missedGraceMinutes"></div>
@@ -461,9 +436,61 @@ export function caregiverPage() {
             <div class="field"><label>Device offline threshold (minutes)</label><input type="number" min="5" max="10080" value="${alerts.offlineMinutes}" data-caregiver-alert="offlineMinutes"></div>
           </div>
         </article>
-      </article>
       </div>
     </section>
+  `;
+}
+
+export function syncLinkCardMarkup(role = "caregiver") {
+  const roomId = store.data.profile.linkedRoomId;
+  const syncStatus = sync.status;
+  const syncLinked = sync.linked;
+  const syncStatusPill = syncLinked
+    ? "status-success"
+    : (syncStatus === "connecting" ? "status-warning" : "status-info");
+  const isPatient = role === "patient";
+
+  return `
+    <article class="card" id="sync-link-card" style="margin-top:1.5rem;border:2px solid color-mix(in srgb, var(--primary) 35%, transparent);background:linear-gradient(145deg, color-mix(in srgb, var(--primary) 8%, var(--surface-strong)), var(--surface));">
+      <div class="card-header">
+        <div>
+          <h3>&#128279; ${isPatient ? "Connect with Caregiver Device" : "Connect with Patient Device"}</h3>
+          <p class="card-subtitle">${isPatient ? "Link your device to your caregiver's phone or computer using a 6-character room code." : "Share the same 6-character room code to receive real-time emergency alarms and live GPS alerts."}</p>
+        </div>
+        <span class="status-pill ${syncStatusPill}">${escapeHtml(sync.statusLabel())}</span>
+      </div>
+      ${sync.configured ? `
+        ${syncLinked ? `
+          <div class="form-grid">
+            <div class="field field-full">
+              <label><strong>Active Room Code:</strong></label>
+              <div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;margin-top:.25rem">
+                <input id="sync-room-display" type="text" value="${escapeHtml(roomId)}" readonly style="font-family:monospace;font-size:1.35rem;font-weight:800;letter-spacing:.2em;max-width:11rem;text-align:center;padding:.5rem;border-radius:12px;background:var(--surface-strong);border:2px solid var(--primary)">
+                <button class="button button-secondary button-small" type="button" data-sync-action="copy-code">&#128203; Copy Code</button>
+              </div>
+              <p style="margin-top:.6rem;color:var(--success);font-weight:600">&#10004; Linked and active. Emergency alarms and "I'm lost" alerts will immediately notify the ${isPatient ? "caregiver" : "patient"}.</p>
+            </div>
+          </div>
+          <div class="row-actions" style="margin-top:.5rem">
+            <button class="button button-ghost button-small" type="button" data-sync-action="leave">Disconnect Room</button>
+          </div>
+        ` : `
+          <div class="form-grid" style="margin-top:.5rem">
+            <div class="field field-full">
+              <label for="sync-join-input" style="font-size:1.05rem;font-weight:700">${isPatient ? "Enter Room Code from Caregiver" : "Enter 6-Character Room Code"}</label>
+              <p style="margin:0 0 .5rem;color:var(--text-muted);font-size:.9rem">${isPatient ? "Type the 6-character code shown on your caregiver's screen to connect your device." : "Generate a new room code to share with the patient, or enter an existing code."}</p>
+              <div style="display:flex;flex-wrap:wrap;gap:.65rem;align-items:center">
+                <input id="sync-join-input" type="text" maxlength="6" placeholder="e.g. ABC123" style="text-transform:uppercase;letter-spacing:.2em;font-family:monospace;font-size:1.25rem;font-weight:800;max-width:12rem;text-align:center;padding:.65rem;border-radius:14px">
+                <button class="button button-primary" type="button" data-sync-action="join">&#128279; ${isPatient ? "Connect to Caregiver" : "Join Room"}</button>
+                ${!isPatient ? '<button class="button button-secondary" type="button" data-sync-action="create">&#10010; Generate New Code</button>' : ''}
+              </div>
+            </div>
+          </div>
+        `}
+      ` : `
+        <p>Firebase is not configured. Real-time linking requires Firebase configuration in <code>config/auth-config.js</code>.</p>
+      `}
+    </article>
   `;
 }
 
@@ -780,7 +807,17 @@ export async function handleAssistanceAction(target, helpers) {
       context.close();
     }, 3000);
     navigator.vibrate?.([400, 200, 400, 200, 400]);
-    const result = await deliverCaregiverAlert("emergency", maps.position || {});
+
+    let position = maps.position;
+    if (!position) {
+      try {
+        position = await maps.requestPosition();
+      } catch {
+        /* proceed without location */
+      }
+    }
+
+    const result = await deliverCaregiverAlert("emergency", position || {});
     store.update((data) => {
       data.emergencyEvents.push({ id: uid("event"), type: "audible-alert", title: "Emergency alarm", timestamp: new Date().toISOString(), delivery: result.status });
     });
@@ -837,6 +874,15 @@ export async function handleAssistanceAction(target, helpers) {
       await navigator.clipboard.writeText(code);
       toast(`Room code ${code} copied to clipboard.`);
     } catch { toast(`Room code: ${code}`); }
+    return true;
+  }
+  if (syncAction === "test-alert") {
+    let position = maps.position;
+    if (!position) {
+      try { position = await maps.requestPosition(); } catch { /* ignore */ }
+    }
+    const result = await deliverCaregiverAlert("emergency", position || {});
+    toast("🚨 Test emergency alert sent to linked room!", { duration: 5000 });
     return true;
   }
   if (syncAction === "leave") {
