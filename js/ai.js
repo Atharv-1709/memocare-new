@@ -10,6 +10,24 @@ function extractText(response) {
   return String(response || "No response was returned.");
 }
 
+let puterLoadPromise;
+
+function loadPuter() {
+  if (globalThis.puter?.ai?.chat) return Promise.resolve();
+  if (puterLoadPromise) return puterLoadPromise;
+  puterLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = "https://js.puter.com/v2/";
+    script.async = true;
+    script.onload = () => globalThis.puter?.ai?.chat
+      ? resolve()
+      : reject(new Error("Puter AI did not load. Check the internet connection, then retry."));
+    script.onerror = () => reject(new Error("Puter AI could not load. Check the internet connection, then retry."));
+    document.head.append(script);
+  });
+  return puterLoadPromise;
+}
+
 export function aiPage() {
   return `
     <section class="page-section">
@@ -37,7 +55,7 @@ export function aiPage() {
 }
 
 async function ask(prompt) {
-  if (!globalThis.puter?.ai?.chat) throw new Error("Puter AI did not load. Check the internet connection, then retry.");
+  await loadPuter();
   const messages = document.getElementById("ai-messages");
   messages?.insertAdjacentHTML("beforeend", `<div class="ai-message ai-user"><strong>You</strong><p>${escapeHtml(prompt)}</p></div><div class="ai-message ai-assistant" id="ai-thinking"><strong>MemoCare AI</strong><p>Thinking…</p></div>`);
   messages?.scrollTo({ top: messages.scrollHeight, behavior: "smooth" });

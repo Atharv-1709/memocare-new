@@ -348,15 +348,15 @@ export function emergencyPage() {
             ${emergencyPerson?.phone ? `<a class="button button-danger" href="tel:${escapeHtml(emergencyPerson.phone)}">Call ${escapeHtml(emergencyPerson.name)}</a>` : '<button class="button button-danger" type="button" data-action="configure-emergency">Add emergency contact</button>'}
             ${regionNumber ? `<a class="button button-danger" href="tel:${escapeHtml(regionNumber)}">Call emergency services (${escapeHtml(regionNumber)})</a>` : '<button class="button button-secondary" type="button" data-action="configure-region-number">Set regional emergency number</button>'}
             <button class="button button-secondary" type="button" data-emergency-action="lost">${t("emergency.lost")}</button>
-            <button class="button button-secondary" type="button" data-emergency-action="alert">${t("emergency.alert")}</button>
+            <button class="button button-danger" type="button" data-emergency-action="alert">Send caregiver emergency alert</button>
           </div>
-          <p class="help-text">With a configured secure alert endpoint, MemoCare records confirmed delivery. Otherwise it opens a prepared message and never falsely labels it sent.</p>
+          <p class="help-text">Opening this page does not send an alert. You will confirm before sending. A linked caregiver receives it while their MemoCare session is open; otherwise MemoCare prepares an SMS or WhatsApp handoff.</p>
           <button class="button button-secondary" type="button" data-read-text="If you are in immediate danger, call the configured emergency number. Stay where you feel safe and use location sharing only when you choose.">${t("common.readAloud")}</button>
         </article>
         <article class="card medical-card">
           <h3>Medical information card</h3>
           <p><strong>Name:</strong> ${escapeHtml(store.data.profile.patientName || (store.data.profile.role === "patient" ? store.data.profile.name : "") || "Not set")}</p>
-          <p><strong>Emergency contact:</strong> ${escapeHtml(emergencyPerson ? `${emergencyPerson.name} · ${emergencyPerson.phone}` : "Not set")}</p>
+           <p><strong>Emergency contact:</strong> ${emergencyPerson ? `${escapeHtml(emergencyPerson.name)} · <a href="tel:${escapeHtml(emergencyPerson.phone)}">${escapeHtml(emergencyPerson.phone)}</a>` : "Not set"}</p>
           <p><strong>Current medicines:</strong> ${escapeHtml(store.data.medications.map((item) => `${item.name} ${item.dosage}`).join(", ") || "None saved")}</p>
           <button class="button button-secondary" type="button" data-read-text="My name is ${escapeHtml(store.data.profile.patientName || (store.data.profile.role === "patient" ? store.data.profile.name : "") || "not set")}. My emergency contact is ${escapeHtml(emergencyPerson?.name || "not set")}.">${t("common.readAloud")}</button>
         </article>
@@ -755,22 +755,30 @@ export async function handleAssistanceAction(target, helpers) {
 
   const emergencyAction = target.closest("[data-emergency-action]")?.dataset.emergencyAction;
   if (emergencyAction === "lost") {
-    const panel = document.getElementById("lost-panel");
-    panel.hidden = false;
-    panel.scrollIntoView({ behavior: "smooth" });
-    let position = null;
-    try {
-      position = maps.position || await maps.requestPosition();
-      const label = document.getElementById("lost-location");
-      if (label) label.textContent = `Current coordinates: ${position.lat.toFixed(5)}, ${position.lng.toFixed(5)} (accuracy about ${Math.round(position.accuracy)} m)`;
-    } catch (error) {
-      toast(`${error.message} The caregiver alert will be prepared without location.`, { type: "error", duration: 7000 });
-    }
-    const result = await deliverCaregiverAlert("lost", position || {});
-    store.update((data) => {
-      data.emergencyEvents.push({ id: uid("event"), type: "lost-mode", title: "I’m lost activated", timestamp: new Date().toISOString(), delivery: result.status });
+    helpers.confirm({
+      title: "Send an I’m lost alert?",
+      message: "MemoCare will share your saved caregiver alert and request your location if you allow it.",
+      confirmLabel: "Send alert",
+      dangerous: true,
+      onConfirm: async () => {
+        const panel = document.getElementById("lost-panel");
+        panel.hidden = false;
+        panel.scrollIntoView({ behavior: "smooth" });
+        let position = null;
+        try {
+          position = maps.position || await maps.requestPosition();
+          const label = document.getElementById("lost-location");
+          if (label) label.textContent = `Current coordinates: ${position.lat.toFixed(5)}, ${position.lng.toFixed(5)} (accuracy about ${Math.round(position.accuracy)} m)`;
+        } catch (error) {
+          toast(`${error.message} The caregiver alert will be prepared without location.`, { type: "error", duration: 7000 });
+        }
+        const result = await deliverCaregiverAlert("lost", position || {});
+        store.update((data) => {
+          data.emergencyEvents.push({ id: uid("event"), type: "lost-mode", title: "I’m lost activated", timestamp: new Date().toISOString(), delivery: result.status });
+        });
+        offerCaregiverHandoff(result, { urgent: true });
+      }
     });
-    offerCaregiverHandoff(result, { urgent: true });
     return true;
   }
   if (emergencyAction === "locate") {
@@ -789,39 +797,29 @@ export async function handleAssistanceAction(target, helpers) {
     return true;
   }
   if (emergencyAction === "alert") {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) {
-      toast("Audible alerts are unavailable in this browser.", { type: "error" });
-      return true;
-    }
-    const context = new AudioContext();
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = "square";
-    oscillator.frequency.value = 880;
-    gain.gain.value = 0.18;
-    oscillator.connect(gain).connect(context.destination);
-    oscillator.start();
-    setTimeout(() => {
-      oscillator.stop();
-      context.close();
-    }, 3000);
-    navigator.vibrate?.([400, 200, 400, 200, 400]);
+    helpers.confirm({
+      title: "Send an emergency alert?",
+      message: "This will alert your linked caregiver or open a prepared message. Call local emergency services directly if you are in immediate danger.",
+      confirmLabel: "Send emergency alert",
+      dangerous: true,
+      onConfirm: async () => {
+        navigator.vibrate?.([400, 200, 400, 200, 400]);
+        let position = maps.position;
+        if (!position) {
+          try {
+            position = await maps.requestPosition();
+          } catch {
+            /* proceed without location */
+          }
+        }
 
-    let position = maps.position;
-    if (!position) {
-      try {
-        position = await maps.requestPosition();
-      } catch {
-        /* proceed without location */
+        const result = await deliverCaregiverAlert("emergency", position || {});
+        store.update((data) => {
+          data.emergencyEvents.push({ id: uid("event"), type: "audible-alert", title: "Emergency alarm", timestamp: new Date().toISOString(), delivery: result.status });
+        });
+        offerCaregiverHandoff(result, { urgent: true });
       }
-    }
-
-    const result = await deliverCaregiverAlert("emergency", position || {});
-    store.update((data) => {
-      data.emergencyEvents.push({ id: uid("event"), type: "audible-alert", title: "Emergency alarm", timestamp: new Date().toISOString(), delivery: result.status });
     });
-    offerCaregiverHandoff(result, { urgent: true });
     return true;
   }
 

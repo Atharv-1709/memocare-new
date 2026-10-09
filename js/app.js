@@ -5,7 +5,7 @@ import { setupAccessibility, applyAccessibility } from "./accessibility.js";
 import { auth, setupAuthUI } from "./auth.js";
 import { sync } from "./sync.js";
 import { setupVoiceControls, speechControlsMarkup, voice } from "./voice.js";
-import { toast, requestNotificationPermission } from "./notifications.js";
+import { toast, requestNotificationPermission, showLocalNotification } from "./notifications.js";
 import {
   medicationPage,
   todayMedicationTimeline,
@@ -44,9 +44,9 @@ let authUI;
 
 function navMarkup(routeList) {
   return routeList.map((route) => `
-    <a class="nav-link" href="#${route.id}" data-route-link="${route.id}" ${route.id === activeRoute ? 'aria-current="page"' : ""}>
+    <a class="nav-link${route.id === "more" ? " nav-link-more" : ""}" href="#${route.id}" data-route-link="${route.id}" ${route.id === activeRoute ? 'aria-current="page"' : ""}>
       <span class="nav-icon" aria-hidden="true">${route.icon}</span>
-      <span>${t(route.titleKey)}</span>
+      <span>${route.id === "more" ? "More" : t(route.titleKey)}</span>
     </a>
   `).join("");
 }
@@ -68,11 +68,18 @@ function renderNavigation() {
   const desktopRoutes = store.data.settings.simplified
     ? routes.filter((route) => simpleIds.has(route.id))
     : routes.filter(visibleForRole);
-  const mobileRoutes = store.data.settings.simplified
-    ? routes.filter((route) => ["home", "today", "medications", "people", "emergency"].includes(route.id))
-    : routes.filter((route) => route.mobile && visibleForRole(route));
+  const mobileCoreIds = ["home", "today", "medications", "people"];
+  const mobileCoreRoutes = routes.filter((route) => mobileCoreIds.includes(route.id) && visibleForRole(route));
+  const mobileMoreRoutes = routes.filter((route) => !mobileCoreIds.includes(route.id) && visibleForRole(route));
+  const phoneView = typeof window !== "undefined" && window.matchMedia("(max-width: 640px)").matches;
+  // On phones, keep every role-appropriate feature in the vertical taskbar.
+  // On larger mobile/tablet widths, keep the compact five-item bar with More.
+  const mobileRoutes = phoneView
+    ? routes.filter(visibleForRole)
+    : [...mobileCoreRoutes, { id: "more", icon: "⋯", titleKey: "nav.more" }];
   $("#desktop-nav").innerHTML = navMarkup(desktopRoutes);
   $("#mobile-nav").innerHTML = navMarkup(mobileRoutes);
+  $("#mobile-nav").dataset.moreRoutes = JSON.stringify(mobileMoreRoutes.map((route) => route.id));
 }
 
 function profileInitials() {
@@ -86,6 +93,16 @@ function profileInitials() {
 function updateProfileUI() {
   $("#profile-initials").textContent = profileInitials();
   $("#local-data-status").textContent = auth.user ? "Signed in" : "On-device data";
+  updateThemeToggleUI();
+}
+
+function updateThemeToggleUI() {
+  const button = $("#theme-toggle");
+  if (!button) return;
+  const isDark = document.documentElement.dataset.theme === "dark";
+  button.setAttribute("aria-label", isDark ? "Switch to light mode" : "Switch to dark mode");
+  button.title = isDark ? "Switch to light mode" : "Switch to dark mode";
+  button.querySelector("span")?.replaceChildren(document.createTextNode(isDark ? "☀" : "☾"));
 }
 
 function updateOrientation() {
@@ -113,6 +130,9 @@ function homePage() {
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const due = dueMedications();
   const nextDose = due.find((medication) => doseStatus(medication.id) === "due");
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const nextDoseMinutes = nextDose ? Number(nextDose.time?.slice(0, 2)) * 60 + Number(nextDose.time?.slice(3, 5)) : NaN;
+  const nextDoseIsNow = nextDose && Number.isFinite(nextDoseMinutes) && nextDoseMinutes <= currentMinutes;
 
   const isCaregiver = store.data.profile.role === "caregiver";
   const activeName = isCaregiver
@@ -120,20 +140,22 @@ function homePage() {
     : (store.data.profile.patientName || (store.data.profile.role === "patient" ? store.data.profile.name : ""));
 
   const people = store.data.people.slice(0, 3);
-  if (store.data.settings.simplified) {
+  // Patients should see the calm, action-first experience by default. Caregivers
+  // keep the dashboard view, while simplified mode remains available to either role.
+  if (store.data.settings.simplified || !isCaregiver) {
     return `
       <section class="page-section simplified-home">
-        <article class="card hero-card"><p class="eyebrow">${formatDate(now, locale, { weekday: "long", day: "numeric", month: "long" })}</p><h2>${escapeHtml(greeting)}${activeName ? `, ${escapeHtml(activeName)}` : ""}.</h2><p class="orientation-clock">${new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(now)}</p></article>
+        <article class="card hero-card action-first-hero"><p class="eyebrow">${formatDate(now, locale, { weekday: "long", day: "numeric", month: "long" })}</p><h2>${escapeHtml(greeting)}${activeName ? `, ${escapeHtml(activeName)}` : ""}.</h2><p class="action-first-question">What do you need to do now?</p><p class="orientation-clock">${new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(now)}</p></article>
+        <article class="card next-action-card"><div class="card-header"><div><p class="eyebrow">Next action</p><h3>${nextDose ? `${nextDoseIsNow ? "Take" : "Next: take"} ${escapeHtml(nextDose.name)}` : "You are all caught up"}</h3><p class="card-subtitle">${nextDose ? `${escapeHtml(nextDose.dosage || "Your scheduled dose")} · ${formatTime(nextDose.time, locale)}` : "There is no medicine waiting for confirmation right now."}</p></div><span class="status-pill ${nextDose ? "status-warning" : "status-safe"}">${nextDose ? (nextDoseIsNow ? "Due now" : "Due later") : "Ready"}</span></div>${nextDose ? todayMedicationTimeline() : '<p class="help-text">Check Today for your next routine or appointment.</p>'}</article>
         <div class="simple-action-grid">
-          <button class="simple-action" type="button" data-route-action="medications"><span aria-hidden="true">✚</span><strong>My medicines</strong></button>
+          <button class="simple-action" type="button" data-route-action="medications"><span aria-hidden="true">✚</span><strong>My medicines</strong><small>See my schedule</small></button>
           <button class="simple-action" type="button" data-action="check-in"><span aria-hidden="true">✓</span><strong>I am okay</strong></button>
-          <button class="simple-action" type="button" data-route-action="people"><span aria-hidden="true">☺</span><strong>Call family</strong></button>
-          <button class="simple-action simple-action-danger" type="button" data-action="open-emergency"><span aria-hidden="true">!</span><strong>Emergency help</strong></button>
+          <button class="simple-action" type="button" data-route-action="people"><span aria-hidden="true">☺</span><strong>Call family</strong><small>Talk to someone</small></button>
+          <button class="simple-action simple-action-danger" type="button" data-route-action="emergency"><span aria-hidden="true">!</span><strong>Emergency help</strong><small>Open help options</small></button>
           <button class="simple-action" type="button" data-route-action="places"><span aria-hidden="true">⌖</span><strong>Find home</strong></button>
           <button class="simple-action" type="button" data-route-action="games"><span aria-hidden="true">◆</span><strong>Memory games</strong></button>
         </div>
-        <article class="card"><div class="card-header"><div><h3>Next medicine</h3></div></div>${nextDose ? todayMedicationTimeline() : '<p>No medicine is waiting right now.</p>'}</article>
-        <button class="button button-secondary button-block" type="button" data-action="open-accessibility">Change simplified mode</button>
+        <button class="button button-secondary button-block" type="button" data-route-action="today">Open today’s plan</button>
       </section>`;
   }
   return `
@@ -220,15 +242,15 @@ function settingsPage() {
           <div class="card-header"><div><h3>Accessibility</h3><p class="card-subtitle">These controls take effect immediately.</p></div></div>
           <button class="button button-primary button-block" type="button" data-action="open-accessibility">${t("a11y.open")}</button>
           <div class="settings-stack" style="margin-top:1rem">
-            <label class="setting-row"><span><strong>Browser notifications</strong><small>Only after permission.</small></span><button class="button button-secondary button-small" type="button" data-settings-action="notifications">Request permission</button></label>
-            <label class="setting-row"><span><strong>Schedule and medicine alarms</strong><small>Beeps while MemoCare is open; notifications may also appear.</small></span><button class="button ${settings.alarmsEnabled ? "button-success" : "button-secondary"} button-small" type="button" data-settings-action="alarms">${settings.alarmsEnabled ? "Alarms on" : "Enable alarms"}</button></label>
+            <label class="setting-row"><span><strong>Browser notifications</strong><small>Notifications appear in the device notification centre after permission is granted.</small></span><button class="button button-secondary button-small" type="button" data-settings-action="notifications">${"Notification" in window && Notification.permission === "granted" ? "Notifications on" : "Enable notifications"}</button></label>
+            <label class="setting-row"><span><strong>Schedule and medicine alarms</strong><small>Buzzes, vibration, and notifications work while MemoCare is open. Keep the app open for reminders.</small></span><button class="button ${settings.alarmsEnabled ? "button-success" : "button-secondary"} button-small" type="button" data-settings-action="alarms">${settings.alarmsEnabled ? "Alarms on" : "Enable alarms"}</button></label>
             <label class="setting-row"><span><strong>Read this page</strong><small>Uses the selected language when available.</small></span><button class="button button-secondary button-small" type="button" data-action="speak-page">Read aloud</button></label>
           </div>
           ${speechControlsMarkup()}
         </article>
         <article class="card span-12">
           <div class="card-header"><div><h3>${t("settings.privacy")}</h3><p class="card-subtitle">Your health and memory data is private.</p></div></div>
-          <table class="privacy-table">
+          <div class="privacy-table-wrap"><table class="privacy-table">
             <thead><tr><th>Information</th><th>Guest mode</th><th>Signed-in mode</th></tr></thead>
             <tbody>
               <tr><td>Medicines, people, memories, safe places</td><td>Stored in this browser</td><td>Still local unless a sync backend is configured</td></tr>
@@ -236,7 +258,7 @@ function settingsPage() {
               <tr><td>Location</td><td>Requested only when used</td><td>Not synced by default</td></tr>
               <tr><td>Arduino serial data</td><td>Local browser connection</td><td>Not sent to authentication provider</td></tr>
             </tbody>
-          </table>
+          </table></div>
           <div class="row-actions" style="margin-top:1rem">
             <button class="button button-secondary" type="button" data-settings-action="export">${t("settings.export")}</button>
             <label class="button button-secondary" for="import-file">${t("settings.import")}</label><input id="import-file" type="file" accept="application/json" hidden>
@@ -295,6 +317,24 @@ function renderRoute(route = currentRoute()) {
 
 function closeDialog() {
   if (appDialog.open) appDialog.close();
+}
+
+function openMobileMenu() {
+  const mobileIds = JSON.parse($("#mobile-nav").dataset.moreRoutes || "[]");
+  const availableRoutes = mobileIds
+    .map((id) => routes.find((route) => route.id === id))
+    .filter(Boolean);
+  openContent({
+    eyebrow: "MemoCare menu",
+    title: "More features",
+    body: `<div class="mobile-feature-menu">${availableRoutes.map((route) => `
+      <button class="quick-action mobile-feature-link" type="button" data-mobile-route="${route.id}">
+        <span aria-hidden="true">${route.icon}</span>
+        <span><strong>${escapeHtml(t(route.titleKey))}</strong><small>Open ${escapeHtml(t(route.titleKey))}</small></span>
+      </button>
+    `).join("")}</div>`,
+    actions: [{ label: "Close", onClick: closeDialog }]
+  });
 }
 
 function openContent({ eyebrow = "", title, body, actions = [] }) {
@@ -444,18 +484,29 @@ async function handleGlobalClick(event) {
   const routeLink = target.closest("[data-route-link]")?.dataset.routeLink;
   if (routeLink) {
     event.preventDefault();
+    if (routeLink === "more") {
+      openMobileMenu();
+      return;
+    }
     navigate(routeLink);
     return;
   }
   const routeAction = target.closest("[data-route-action]")?.dataset.routeAction;
   if (routeAction) navigate(routeAction);
+  const mobileRoute = target.closest("[data-mobile-route]")?.dataset.mobileRoute;
+  if (mobileRoute) {
+    closeDialog();
+    navigate(mobileRoute);
+    return;
+  }
+  if (target.closest('[data-action="open-mobile-menu"]') || target.closest('[data-route-link="more"]')) {
+    event.preventDefault();
+    openMobileMenu();
+    return;
+  }
   if (target.closest('[data-action="open-emergency"]')) {
+    // Opening the emergency page must never send an alert by itself.
     navigate("emergency");
-    const result = await deliverCaregiverAlert("emergency", maps.position || {});
-    store.update((data) => {
-      data.emergencyEvents.push({ id: uid("event"), type: "emergency-help-opened", title: "Emergency help opened", timestamp: new Date().toISOString(), delivery: result.status });
-    });
-    offerCaregiverHandoff(result, { urgent: true });
   }
   if (target.closest('[data-action="test-alarm"]')) {
     try {
@@ -467,6 +518,14 @@ async function handleGlobalClick(event) {
     } catch (error) {
       toast("Could not play alarm: " + error.message, { type: "error" });
     }
+    return;
+  }
+  if (target.closest('[data-action="toggle-theme"]')) {
+    const isDark = document.documentElement.dataset.theme === "dark";
+    store.update((data) => { data.settings.theme = isDark ? "light" : "dark"; });
+    applyAccessibility();
+    updateThemeToggleUI();
+    toast(`${isDark ? "Light" : "Dark"} mode enabled.`);
     return;
   }
   if (target.closest('[data-action="check-in"]')) {
@@ -592,6 +651,14 @@ async function init() {
   if (store.data.settings.alarmsEnabled) alarms.start();
 
   document.addEventListener("click", handleGlobalClick);
+  let lastPhoneNavigation = window.matchMedia("(max-width: 640px)").matches;
+  addEventListener("resize", () => {
+    const phoneNavigation = window.matchMedia("(max-width: 640px)").matches;
+    if (phoneNavigation !== lastPhoneNavigation) {
+      lastPhoneNavigation = phoneNavigation;
+      renderNavigation();
+    }
+  });
   setupRouter(renderRoute);
   updateOrientation();
   clearInterval(clockTimer);
@@ -626,8 +693,30 @@ function setupCaregiverAlertsListener() {
     showCaregiverEmergencyOverlay(alert);
   });
 
+  sync.addEventListener("caregiver-update", (event) => {
+    const alert = event.detail;
+    if (!alert || store.data.profile.role !== "caregiver") return;
+    const title = alert.type === "medication-due" ? "Medicine reminder" : "Caregiver update";
+    showLocalNotification(title, {
+      body: alert.message || "There is a new update from your patient.",
+      tag: alert.id || `caregiver-${alert.type}`,
+      requireInteraction: alert.type === "medication-missed"
+    });
+    toast(alert.message || "There is a new caregiver update.", { type: alert.type === "medication-missed" ? "warning" : "info", duration: 8000 });
+  });
+
   sync.addEventListener("remote-update", () => {
     renderRoute(activeRoute);
+  });
+
+  alarms.addEventListener("alarm", (event) => {
+    const item = event.detail;
+    if (!item || store.data.profile.role !== "patient" || !sync.linked || !item.id.startsWith("med:")) return;
+    sync.sendAlert({
+      type: "medication-due",
+      patientName: store.data.profile.patientName || store.data.profile.name || "Patient",
+      message: `${item.title} is due now. ${item.body}`
+    }).catch((error) => console.warn("Caregiver medication reminder could not be sent:", error));
   });
 
   // Request browser push notification permission if undecided

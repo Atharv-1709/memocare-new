@@ -7,10 +7,34 @@
 
 html {
     -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
 }
 
 body {
     min-height: 100svh;
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+img, video, canvas, iframe {
+    max-width: 100%;
+}
+
+button, input, select, textarea {
+    max-width: 100%;
+    font: inherit;
+}
+
+input, select, textarea {
+    min-width: 0;
+}
+
+a {
+    overflow-wrap: anywhere;
 }
 
 .bottom-nav {
@@ -144,6 +168,35 @@ body {
         bottom: calc(5.8rem + env(safe-area-inset-bottom)) !important;
         right: 0.85rem !important;
         font-size: 1.35rem !important;
+    }
+
+    form {
+        width: 100%;
+    }
+
+    form input,
+    form select,
+    form textarea,
+    form button,
+    .modal button,
+    .modal-actions button {
+        min-height: 48px;
+        width: 100%;
+    }
+
+    .modal,
+    dialog,
+    [role="dialog"] {
+        width: min(calc(100vw - 0.75rem), 720px);
+        max-width: calc(100vw - 0.75rem);
+        max-height: calc(100dvh - 0.75rem);
+        overflow: auto;
+    }
+
+    table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
     }
 }
 

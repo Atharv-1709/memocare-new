@@ -193,6 +193,19 @@ export function recordDose(medicationId, status, { source = "manual", note = "" 
     data.doseHistory.push(event);
   });
   sync.push();
+  if (store.data.profile.role === "patient" && sync.linked) {
+    const statusMessages = {
+      taken: `${medication.name} was marked taken.`,
+      skipped: `${medication.name} was marked skipped.`,
+      postponed: `${medication.name} was postponed.`,
+      missed: `${medication.name} was marked missed.`
+    };
+    sync.sendAlert({
+      type: `medication-${status}`,
+      patientName: store.data.profile.patientName || store.data.profile.name || "Patient",
+      message: statusMessages[status]
+    }).catch((error) => console.warn("Caregiver medication update could not be sent:", error));
+  }
   return event;
 
 }

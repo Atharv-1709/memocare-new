@@ -201,9 +201,11 @@ class SyncService extends EventTarget {
             const alertId = change.doc.id;
             if (!data.acknowledged && !this._seenAlertIds.has(alertId)) {
               this._seenAlertIds.add(alertId);
-              // Dispatch event for caregivers to react
+              // Only danger/help events take over the caregiver screen. Routine
+              // medication and check-in updates use a normal notification.
               const alert = { id: alertId, ...data };
-              this.dispatchEvent(new CustomEvent("caregiver-alert", { detail: alert }));
+              const urgentTypes = new Set(["emergency", "lost", "outside-zone", "help"]);
+              this.dispatchEvent(new CustomEvent(urgentTypes.has(data.type) ? "caregiver-alert" : "caregiver-update", { detail: alert }));
             }
           }
         });

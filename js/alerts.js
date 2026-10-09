@@ -103,7 +103,7 @@ export async function deliverCaregiverAlert(type, details = {}) {
 export function offerCaregiverHandoff(result, { urgent = false } = {}) {
   if (result.status === "delivered") {
     if (result.channel === "firebase") {
-      toast("🚨 Emergency alert delivered instantly to caregiver in real time!", { type: "success", duration: 8000 });
+      toast("🚨 Alert sent to the linked caregiver room. The caregiver will see it while MemoCare is open.", { type: "success", duration: 8000 });
     } else {
       toast("Caregiver alert delivered by the configured service.", { type: "success", duration: 7000 });
     }
