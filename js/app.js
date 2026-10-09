@@ -42,6 +42,15 @@ let activeRoute = "home";
 let clockTimer = null;
 let authUI;
 
+function finishAppLoading() {
+  const loadingScreen = $("#app-loading-screen");
+  document.body.classList.add("app-ready");
+  if (!loadingScreen) return;
+  loadingScreen.setAttribute("aria-busy", "false");
+  loadingScreen.classList.add("is-hidden");
+  setTimeout(() => loadingScreen.remove(), 300);
+}
+
 function navMarkup(routeList) {
   return routeList.map((route) => `
     <a class="nav-link${route.id === "more" ? " nav-link-more" : ""}" href="#${route.id}" data-route-link="${route.id}" ${route.id === activeRoute ? 'aria-current="page"' : ""}>
@@ -133,6 +142,9 @@ function homePage() {
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const nextDoseMinutes = nextDose ? Number(nextDose.time?.slice(0, 2)) * 60 + Number(nextDose.time?.slice(3, 5)) : NaN;
   const nextDoseIsNow = nextDose && Number.isFinite(nextDoseMinutes) && nextDoseMinutes <= currentMinutes;
+  const nextActionTitle = nextDose
+    ? (nextDoseIsNow ? "Medicine due now" : "Next scheduled medicine")
+    : "No medicine scheduled";
 
   const isCaregiver = store.data.profile.role === "caregiver";
   const activeName = isCaregiver
@@ -145,8 +157,8 @@ function homePage() {
   if (store.data.settings.simplified || !isCaregiver) {
     return `
       <section class="page-section simplified-home">
-        <article class="card hero-card action-first-hero"><p class="eyebrow">${formatDate(now, locale, { weekday: "long", day: "numeric", month: "long" })}</p><h2>${escapeHtml(greeting)}${activeName ? `, ${escapeHtml(activeName)}` : ""}.</h2><p class="action-first-question">What do you need to do now?</p><p class="orientation-clock">${new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(now)}</p></article>
-        <article class="card next-action-card"><div class="card-header"><div><p class="eyebrow">Next action</p><h3>${nextDose ? `${nextDoseIsNow ? "Take" : "Next: take"} ${escapeHtml(nextDose.name)}` : "You are all caught up"}</h3><p class="card-subtitle">${nextDose ? `${escapeHtml(nextDose.dosage || "Your scheduled dose")} · ${formatTime(nextDose.time, locale)}` : "There is no medicine waiting for confirmation right now."}</p></div><span class="status-pill ${nextDose ? "status-warning" : "status-safe"}">${nextDose ? (nextDoseIsNow ? "Due now" : "Due later") : "Ready"}</span></div>${nextDose ? todayMedicationTimeline() : '<p class="help-text">Check Today for your next routine or appointment.</p>'}</article>
+        <article class="card patient-orientation-card"><div><p class="eyebrow">${formatDate(now, locale, { weekday: "long", day: "numeric", month: "long" })}</p><h2>${escapeHtml(greeting)}${activeName ? `, ${escapeHtml(activeName)}` : ""}.</h2><p class="action-first-question">What do you need to do now?</p></div><p class="orientation-clock">${new Intl.DateTimeFormat(locale, { hour: "numeric", minute: "2-digit" }).format(now)}</p></article>
+        <article class="card next-action-card"><div class="card-header"><div><p class="eyebrow">Next action</p><h3>${nextActionTitle}</h3>${nextDose ? `<p class="card-subtitle">The medicine name, dosage, time, and actions are shown below.</p>` : '<p class="card-subtitle">There is no scheduled medicine to confirm right now.</p>'}</div><span class="status-pill ${nextDose ? "status-warning" : "status-safe"}">${nextDose ? (nextDoseIsNow ? "Due now" : "Due later") : "Ready"}</span></div>${nextDose ? todayMedicationTimeline() : '<p class="help-text">Check Today for your next routine or appointment.</p>'}</article>
         <div class="simple-action-grid">
           <button class="simple-action" type="button" data-route-action="medications"><span aria-hidden="true">✚</span><strong>My medicines</strong><small>See my schedule</small></button>
           <button class="simple-action" type="button" data-action="check-in"><span aria-hidden="true">✓</span><strong>I am okay</strong></button>
@@ -220,7 +232,7 @@ function settingsPage() {
   const profile = store.data.profile;
   const settings = store.data.settings;
   return `
-    <section class="page-section">
+    <section class="page-section settings-page">
       ${pageIntro("Preferences, data, and safety", t("settings.title"), "Control what stays on this device, what may sync after sign-in, and how MemoCare behaves.")}
       <div class="dashboard-grid">
         <article class="card span-6">
@@ -673,6 +685,7 @@ async function init() {
 
   // Initialize real-time sync and caregiver alert listeners
   setupCaregiverAlertsListener();
+  finishAppLoading();
 }
 
 /**
@@ -813,7 +826,11 @@ async function setupPatientNotifications() {
   });
 }
 
-init();
+init().catch((error) => {
+  console.error("MemoCare initialization failed:", error);
+  finishAppLoading();
+  toast("MemoCare could not finish loading. Your saved data is unchanged.", { type: "error", duration: 9000 });
+});
 
 // Expose for console debugging
 globalThis._memoAlarms = alarms;

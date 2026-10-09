@@ -241,19 +241,34 @@ export function adherenceSummary(days = 7) {
 export function medicationCard(medication, { timeline = false } = {}) {
   const status = doseStatus(medication.id);
   const isCaregiver = store.data.profile.role === "caregiver";
+  const statusLabels = {
+    due: "Needs confirmation",
+    taken: "Taken",
+    skipped: "Skipped",
+    missed: "Missed",
+    postponed: "Remind later"
+  };
+  const statusClasses = {
+    due: "status-warning",
+    taken: "status-safe",
+    skipped: "status-info",
+    missed: "status-danger",
+    postponed: "status-info"
+  };
   return `
     <article class="${timeline ? "timeline-item" : "card medication-card"}" style="--pill-color:${escapeHtml(medication.color)}" data-medication-id="${medication.id}">
       ${!timeline && medication.photo ? `<img src="${escapeHtml(medication.photo)}" alt="" class="medication-photo">` : ""}
-      ${timeline ? `<div class="timeline-time">${escapeHtml(formatTime(medication.time, getLanguageMeta().locale))}</div>` : ""}
+      ${timeline ? `<div class="timeline-time"><span class="schedule-label">Scheduled</span>${escapeHtml(formatTime(medication.time, getLanguageMeta().locale))}</div>` : ""}
       <div class="data-row-main">
-        <div style="display:flex;align-items:center;gap:.65rem">
+        <div class="medication-heading">
           ${timeline ? "" : '<div class="pill-visual" aria-hidden="true"></div>'}
           <div>
             <h3>${escapeHtml(medication.name)}</h3>
-            <p>${escapeHtml(medication.dosage)} · ${escapeHtml(medication.foodTiming === "any" ? "Any food timing" : `${medication.foodTiming} food`)}</p>
+            <p class="medication-dose"><span>Dosage</span> ${escapeHtml(medication.dosage || "Not specified")}</p>
+            <p class="medication-timing">${escapeHtml(medication.foodTiming === "any" ? "Any food timing" : `${medication.foodTiming} food`)}</p>
           </div>
         </div>
-        <span class="status-pill status-info">${escapeHtml(status)}</span>
+        <span class="status-pill ${statusClasses[status] || "status-info"}"><span class="status-marker" aria-hidden="true"></span>${escapeHtml(statusLabels[status] || status)}</span>
       </div>
       <div class="row-actions">
         ${medication.instructions ? `<button class="button button-small button-secondary" type="button" data-read-text="${escapeHtml(`${medication.name}. ${medication.dosage}. ${medication.instructions}`)}">${t("common.readAloud")}</button>` : ""}

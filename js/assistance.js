@@ -339,11 +339,12 @@ export function emergencyPage() {
   const home = store.data.safePlaces.find((place) => place.type === "home") ?? store.data.safePlaces[0];
   const regionNumber = store.data.settings.regionEmergencyNumber;
   return `
-    <section class="page-section">
-      <div class="page-intro"><div><p class="eyebrow">Urgent support</p><h2>${t("emergency.title")}</h2><p>Call buttons are direct. Location sharing asks permission and clearly shows when active.</p></div></div>
+    <section class="page-section help-page">
+      <div class="page-intro"><div><p class="eyebrow">Urgent support</p><h2>${t("emergency.title")}</h2><p>Choose one clear action. Opening this page does not contact anyone by itself.</p></div></div>
       <div class="emergency-layout">
         <article class="card emergency-primary">
           <h3>${t("emergency.call")}</h3>
+          <p class="help-instruction">If you are in immediate danger, call emergency services first.</p>
           <div class="emergency-call-grid">
             ${emergencyPerson?.phone ? `<a class="button button-danger" href="tel:${escapeHtml(emergencyPerson.phone)}">Call ${escapeHtml(emergencyPerson.name)}</a>` : '<button class="button button-danger" type="button" data-action="configure-emergency">Add emergency contact</button>'}
             ${regionNumber ? `<a class="button button-danger" href="tel:${escapeHtml(regionNumber)}">Call emergency services (${escapeHtml(regionNumber)})</a>` : '<button class="button button-secondary" type="button" data-action="configure-region-number">Set regional emergency number</button>'}
@@ -391,7 +392,7 @@ export function caregiverPage() {
     : (syncStatus === 'connecting' ? 'status-warning' : 'status-info');
   const patientLabel = store.data.profile.patientName ? ` for <strong>${escapeHtml(store.data.profile.patientName)}</strong>` : "";
   return `
-    <section class="page-section">
+    <section class="page-section caregiver-page">
       <div class="page-intro"><div><p class="eyebrow">Privacy-conscious summary</p><h2>${t("caregiver.title")}</h2><p>The patient controls each visible category. Use the room link below to sync with the patient's device.</p></div></div>
       ${syncLinked
         ? `<div class="banner banner-success"><strong>&#128279; Live link active${patientLabel}</strong><br>Syncing with room <code>${escapeHtml(roomId)}</code>. Medications and dose history are shared in real time.</div>`
@@ -451,7 +452,7 @@ export function syncLinkCardMarkup(role = "caregiver") {
   const isPatient = role === "patient";
 
   return `
-    <article class="card" id="sync-link-card" style="margin-top:1.5rem;border:2px solid color-mix(in srgb, var(--primary) 35%, transparent);background:linear-gradient(145deg, color-mix(in srgb, var(--primary) 8%, var(--surface-strong)), var(--surface));">
+    <article class="card sync-link-card" id="sync-link-card">
       <div class="card-header">
         <div>
           <h3>&#128279; ${isPatient ? "Connect with Caregiver Device" : "Connect with Patient Device"}</h3>
